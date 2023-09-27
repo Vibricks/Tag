@@ -1,0 +1,35 @@
+{
+  "name": "Tag",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+        "Shared": {
+          "$path": "src/Shared"
+        },
+        "Packages": {
+          "$path": "Packages"
+        }
+    },
+
+
+    
+    "ServerScriptService": {
+        "$path": "src/Server",
+        "$ignoreUnknownInstances": true
+    },
+
+    "StarterPlayer": {
+      "StarterCharacterScripts": {
+        "$path": "src/Client/StarterCharacterScripts",
+        "$ignoreUnknownInstances": true
+
+      },
+      "StarterPlayerScripts": {
+          "$path": "src/Client/StarterPlayerScripts",
+          "$ignoreUnknownInstances": true
+      }
+    }
+
+  }
+}

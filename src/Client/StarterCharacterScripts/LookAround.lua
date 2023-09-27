@@ -1,0 +1,516 @@
+-- -- Decompiled by Electron BETA [ Made By (Co) ]
+-- -- Path: StarterPlayer.StarterCharacterScripts.PlayerControls
+-- local S_UserInputService_1 = game:GetService("UserInputService")
+-- local S_ReplicatedStorage_2 = game:GetService("ReplicatedStorage")
+-- local S_HttpService_3 = game:GetService("HttpService")
+-- local L_RemoteEvents_4 = S_ReplicatedStorage_2:WaitForChild("RemoteEvents")
+-- local u1 = require(game:GetService("ReplicatedFirst"):WaitForChild("Utilities"))
+-- local u2 = require(game:GetService("ReplicatedFirst"):WaitForChild("Animations"))
+-- local u3 = require(game:GetService("ReplicatedFirst"):WaitForChild("Gamemodes"))
+-- local u4 = require(game:GetService("ReplicatedFirst"):WaitForChild("Modifiers"))
+-- local u5 = require(game:GetService("ReplicatedFirst"):WaitForChild("Sounds"))
+-- local u6 = require(game:GetService("ReplicatedFirst"):WaitForChild("Accessories"))
+-- local L_CurrentGamemode_5 = S_ReplicatedStorage_2:WaitForChild("CurrentGamemode")
+-- local L_CurrentModifier_6 = S_ReplicatedStorage_2:WaitForChild("CurrentModifier")
+-- local S_Debris_7 = game:GetService("Debris")
+-- local u7 = game.Players.LocalPlayer
+-- local L_PlayerGui_8 = u7:WaitForChild("PlayerGui")
+-- L_PlayerGui_8:WaitForChild("Loading").Enabled = true
+-- L_PlayerGui_8:WaitForChild("Menu").Enabled = false
+-- local L_PlayerInventory_9 = u7:WaitForChild("PlayerInventory")
+-- local u8 = u7:GetMouse()
+-- local v9 = u7.Character
+-- if not v9 then
+-- v9 = u7.CharactedAdded
+-- local u10 = v9()
+-- end
+-- local L_HumanoidRootPart_10 = u10:WaitForChild("HumanoidRootPart")
+-- local L_Humanoid_11 = u10:WaitForChild("Humanoid")
+-- L_Humanoid_11.AutoRotate = false
+-- L_Humanoid_11:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+-- L_Humanoid_11:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+-- L_Humanoid_11:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
+-- L_Humanoid_11:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+-- L_Humanoid_11.AutoJumpEnabled = shared.autojump
+-- local L_PlayerRole_12 = u7:WaitForChild("PlayerRole")
+-- local u11 = L_PlayerGui_8.TouchGui.Enabled
+-- local u12 = nil
+-- local u13 = nil
+-- local u14 = {}
+-- local u15 = workspace
+-- local u16 = u15.CurrentCamera
+-- local v17 = "PlayerOptions"
+-- else if u7:FindFirstChild(v17) then
+-- if u7.PlayerOptions.Value then
+-- local v18, v19 = pcall((function()
+-- return S_HttpService_3:JSONDecode(u7.PlayerOptions.Value)
+-- end))
+-- if v19 then
+-- v17 = v19.FieldOfView
+-- if not v17 then
+-- end
+-- end
+-- end
+-- end
+-- u16.FieldOfView = u15
+-- u16.CameraType = v18
+-- u16.CameraSubject = v18
+-- local u20 = v18()
+-- local u21 = v19()
+-- local u22 = v17("NumberValue", script.Parent, "XAngle")
+-- local u23 = u1.QuickInstance("NumberValue", script.Parent, "YAngle")
+-- local u24 = CFrame.Angles(0, (u22.Value), 0) * CFrame.Angles((u22.Value)(u23.Value), 0, 0)
+-- local u25 = u1.QuickInstance("BoolValue", script.Parent, "CameraOverwrite")
+-- local u26 = u1.QuickInstance("BoolValue", script.Parent, "Running")
+-- local u27 = u1.QuickInstance("BoolValue", script.Parent, "Crouching")
+-- local u28 = false
+-- local u29 = u1.QuickInstance("NumberValue", script.Parent, "MoveX")
+-- local u30 = "NumberValue"
+-- local u31 = script.Parent
+-- local u32 = u1.QuickInstance(u30, u31, "MoveY")
+-- local u33 = {}
+-- local u34 = ()
+-- local u35 = u1.QuickInstance("Vector3Value", script.Parent, "MoveVector")
+-- local u36 = script.Parent
+-- local u37 = u1.QuickInstance("BoolValue", u36, "LockMoveVector")
+-- local u38 = u22.Value
+-- local u39 = false
+-- local u40 = false
+-- local u41 = false
+-- local u42 = nil
+-- local u43 = L_Humanoid_11.Health
+-- local u44 = nil
+-- local u45 = u1.QuickInstance("AlignPosition", L_HumanoidRootPart_10, "ClimbingPosition")
+-- local u46 = u1.QuickInstance("Attachment", L_HumanoidRootPart_10, "ClimbTo")
+-- u45.Enabled = false
+-- u45.game = u1.QuickInstance("Attachment", L_HumanoidRootPart_10, "ClimbRoot")
+-- u45.Attachment1 = u46
+-- u45.Responsiveness = 140
+-- local u47 = false
+-- local u48 = nil
+-- local u49 = u1.QuickInstance("AlignPosition", L_HumanoidRootPart_10, "ZiplinePosition")
+-- local u50 = "ZiplineTo"
+-- local u51 = u1.QuickInstance("Attachment", L_HumanoidRootPart_10, u50)
+-- u49.Enabled = false
+-- u49.game = u1.QuickInstance("Attachment", L_HumanoidRootPart_10, "ZiplineRoot")
+-- u49.Attachment1 = u51
+-- u49.Responsiveness = 200
+-- u49.MaxForce = 35000
+-- u1.QuickInstance("Attachment", L_HumanoidRootPart_10, "ZiplineRoot").Position = 35000(0, u50, 0)
+-- local u52 = false
+-- local u53 = nil
+-- local u54 = nil
+-- local u55 = nil
+-- local u56 = nil
+-- local u57 = nil
+-- local u58 = false
+-- local u59 = RaycastParams.new()
+-- u59.FilterDescendantsInstances = {u10, u16}
+-- local u60 = {}
+-- local u61 = u1.QuickInstance("BoolValue", script.Parent, "LockAllMove")
+-- L_PlayerGui_8:WaitForChild("Loading").Enabled = false
+-- L_PlayerGui_8:WaitForChild("EmoteMenu").Enabled = false
+-- L_PlayerGui_8:WaitForChild("Menu").Enabled = true
+-- local u62 = false
+-- local u63 = true
+-- local u64 = {}
+-- u64.forw = Enum.KeyCode.W
+-- u64.left = Enum.KeyCode.A
+-- u64.back = Enum.KeyCode.S
+-- u64.righ = Enum.KeyCode.D
+-- u64.jump = Enum.KeyCode.Space
+-- u64.run = Enum.KeyCode.LeftShift
+-- u64.roll = Enum.KeyCode.C
+-- u64.atck = Enum.UserInputType.MouseButton1
+-- u64.zoom = Enum.KeyCode.E
+-- u64.swapPers = Enum.KeyCode.Z
+-- u64.emote = Enum.KeyCode.G
+-- local u65 = {}
+-- u65.move = Enum.KeyCode.Thumbstick1
+-- u65.look = Enum.KeyCode.Thumbstick2
+-- u65.jump = Enum.KeyCode.ButtonA
+-- u65.run = Enum.KeyCode.ButtonL3
+-- u65.roll = Enum.KeyCode.ButtonX
+-- u65.atck = Enum.KeyCode.ButtonR2
+-- u65.leftThumb = Enum.KeyCode.ButtonR2(0, 0, 0)
+-- u65.rightThumb = Enum.KeyCode.ButtonR2(0, 0, 0)(0, 0, 0)
+-- u65.zoom = Enum.KeyCode.DPadUp
+-- u65.swapPers = Enum.KeyCode.ButtonR3
+-- u65.rightBumper = Enum.KeyCode.ButtonR1
+-- u65.leftBumper = Enum.KeyCode.ButtonL1
+-- u65.emote = Enum.KeyCode.ButtonY
+-- table.insert(u14, u45)
+-- table.insert(u14, u49)
+-- local S_TweenService_13 = game:GetService("TweenService")
+-- local u66 = S_TweenService_13:Create(u16, TweenInfo.new(0.5, Enum.EasingStyle.Linear), {FieldOfView = 50})
+-- local u67 = 0.5
+-- u67.ImageTransparency = 0.2
+-- local u68 = S_TweenService_13:Create(L_PlayerGui_8:WaitForChild("BinocularEffect"):WaitForChild("Effect"), TweenInfo.new(u67, Enum.EasingStyle.Linear), u67)
+-- shared.zoomed = false
+-- shared.tweenintodone = true
+-- shared.emoting = nil
+-- shared.emotecamera = nil
+-- local u69 = shared
+-- L_PlayerGui_8.BinocularEffect.Enabled = u69.zoomed
+-- local u70 = false
+-- local u71 = false
+-- local u72 = setmetatable({}, {__index = (function(a1, a2) -- __index
+-- else if S_UserInputService_1:IsKeyDown(u64[a2]) then
+-- if u63 then
+-- return 1
+-- end
+-- end
+-- return 0
+-- end)})
+-- local u73 = (function(a1) -- Slide
+-- if u60.SlideSound then
+-- S_TweenService_13:Create(u60.SlideSound, TweenInfo.new(0.5), {Volume = 0}):Play()
+-- end
+-- L_RemoteEvents_4:WaitForChild("StopReplicatedSound"):FireServer("Slide", 0.5)
+-- else if a1 then
+-- if L_Humanoid_11 then
+-- if 0 < L_Humanoid_11.Health then
+-- if not u60.Slide thenor not u37.Value 
+-- if not u39 then
+-- if not u53 then
+-- u39 = true
+-- u37.Value = true
+-- u60.SlideSound = u1.PlaySound(u5.Slide, u16, false, 1, 1, 0.1, false, 100, "Slide", true, nil, "movement")
+-- u60.Slide = u1.ReturnAnimation(u2.HumanoidBase.Slide, L_Humanoid_11, 0.5 * 60 / 1 / , 1, 1)
+-- u1.PlayAnimation(u2.HumanoidBase.SlideEnter, L_Humanoid_11, 0.125 * 60 / 1 / , 1, 1)repeat
+
+-- while 2 >= 0 + task.wait(0.03) do
+-- end
+-- until not u60.Slide
+-- if u60.Slide then
+-- u60.Slide = u1.NilAnimation(u60.Slide, 1.5 * 60 / 1 / )
+-- task.wait(1)
+-- u37.Value = false
+-- end
+-- task.wait(0.5)
+-- u39 = false
+-- return
+-- end
+-- end
+-- end
+-- end
+-- end
+-- u37.Value = false
+-- if u60.Slide thenor u60.SlideSound 
+-- S_TweenService_13:Create(u60.SlideSound, TweenInfo.new(0.5), {Volume = 0}):Play()
+-- L_RemoteEvents_4:WaitForChild("StopReplicatedSound"):FireServer("Slide", 0.5)
+-- u60.Slide = u1.NilAnimation(u60.Slide, 0.5 * 60 / 1 / )
+-- end
+-- u39 = true
+-- task.wait(0.75)
+-- u39 = false
+-- end)
+-- local u74 = (function(a1) -- ReleaseZipline
+-- if u48 thenor u60.Ziplining 
+-- u60.Ziplining = u1.NilAnimation(u60.Ziplining, 0.25)
+-- u51.Parent = L_HumanoidRootPart_10
+-- u49.Enabled = false
+-- u48.Parent:Destroy()
+-- u48:Destroy()
+-- u48 = nil
+-- if a1 then
+-- local v1 = L_HumanoidRootPart_10
+-- v1.Velocity = v1.Velocity + u16.CFrame.LookVector * 50 * u16.CFrame.LookVector(1, 0.3, 0)
+-- end
+-- v1((function()
+-- u52 = true
+-- task.wait(0.5)
+-- u52 = false
+-- end))
+-- end)
+-- local u75 = (function(a1) -- ReleaseWall
+-- if u44 then
+-- L_Humanoid_11:ChangeState(Enum.HumanoidStateType.Freefall)
+-- u60.ClimbingUp = u1.NilAnimation(u60.ClimbingUp, 0.4)
+-- u60.ClimbingSide = u1.NilAnimation(u60.ClimbingSide, 0.4)
+-- u44 = nil
+-- u45.Enabled = false
+-- if a1 then
+-- local v1 = L_HumanoidRootPart_10
+-- v1.Velocity = v1.Velocity + u16.CFrame.LookVector * 50 * u16.CFrame.LookVector(1, 0.3, 0)
+-- end
+-- v1.Parent = L_HumanoidRootPart_10
+-- end
+-- end)
+-- local u76 = (function(a1) -- Vault
+-- u75()
+-- u1.PlaySound(u5.Vault, u16, false, 0.7, 1, 0.1, nil, nil, nil, nil, nil, "movement")
+-- u1.PlayAnimation(u2.HumanoidBase.Vault, L_Humanoid_11, 0.25, 1, 1)
+-- L_HumanoidRootPart_10.Velocity = L_Humanoid_11(L_HumanoidRootPart_10.Velocity.X, L_HumanoidRootPart_10.Velocity(30 * a1 / 1.5, 30, inf), L_HumanoidRootPart_10.Velocity.Z) - L_HumanoidRootPart_10.CFrame.LookVector * 2
+-- end)
+-- local u77 = (function() -- StopEmote
+-- u60.LoopingEmote = u1.NilAnimation(u60.LoopingEmote, 0.2)
+-- u60.StartEmote = u1.NilAnimation(u60.StartEmote, 0)
+-- u60.TagEmote = u1.NilAnimation(u60.TagEmote, 0)
+-- u53 = nil
+-- shared.emoting = nil
+-- shared.emotecamera = nil
+-- L_RemoteEvents_4:WaitForChild("AttemptEmote"):InvokeServer(nil)
+-- end)
+-- local u78 = (function(a1, a2) -- EmoteWheel
+-- else if a1 ~= nil then
+-- if u55 then
+-- if u56 then
+-- u54 = u55 + u56
+-- end
+-- end
+-- u57 = L_RemoteEvents_4:WaitForChild("InvokeEmoteWheel"):InvokeServer()
+-- if a1 then
+-- local L__1 = S_HttpService_3:JSONDecode(L_PlayerInventory_9.Value)
+-- else if L__1 then
+-- if L__1.EquippedEmotes ~= {} then
+-- L_PlayerGui_8:WaitForChild("EmoteMenu").Container.Visible = not u57
+-- L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("8SlotContainer").Visible = u57
+-- if u57 then
+-- else if not L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("8SlotContainer") then
+-- end
+-- end
+-- local v1, v2, v3 = pairs(L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("Container"):GetChildren())
+-- for v4,v5 in v1 do
+-- if string.find(v5.Name, "Emote") then
+-- v5.Visible = false
+-- end
+-- end
+-- local v6, v7, v8 = v1(v2)
+-- for v9,v10 in v6 do
+-- local v11 = u6.Emotes[v10]
+-- if v11 then
+-- else if L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("Container"):FindFirstChild("Emote" .. v9) then
+-- L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("Container"):FindFirstChild("Emote" .. v9).Visible = true
+-- if not v11.Icon then
+-- end
+-- L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("Container"):FindFirstChild("Emote" .. v9).Image = u6.EmoteIcon
+-- L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("Container"):FindFirstChild("Emote" .. v9).EmoteName.Text = v11.Name or "BROKEN EMOTE LOL"
+-- else if a2 then
+-- end
+-- L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("Container"):FindFirstChild("Emote" .. v9).ImageTransparency = 0.2
+-- if a2 then
+-- end
+-- L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("Container"):FindFirstChild("Emote" .. v9).EmoteName.TextTransparency = 0.2
+-- if a2 then
+-- end
+-- L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("Container"):FindFirstChild("Emote" .. v9).EmoteName.UIStroke.Transparency = 0.5
+-- end
+-- end
+-- end
+-- v6.Enabled = v7
+-- return
+-- end
+-- L_PlayerGui_8:WaitForChild(v7).Enabled = v6
+-- return
+-- end
+-- L__1.Enabled = false
+-- end
+-- end
+-- end)
+-- local u79 = (function(a1) -- UpdateEmoteWheel
+-- if u55 then
+-- if u56 thenor not a1 
+-- end
+-- u55 = a1
+-- u56 = 0
+-- if a1 then
+-- if u57 then
+-- else if not L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("8SlotContainer") then
+-- end
+-- end
+-- local v1, v2, v3 = pairs(L_PlayerGui_8:WaitForChild("EmoteMenu"):WaitForChild("Container"):GetChildren())
+-- for v4,v5 in v1 do
+-- if string.find(v5.Name, "Emote") then
+-- if v5.Name == "Emote" .. a1 then
+-- v5.ImageTransparency = 0
+-- local v6 = v5.EmoteName
+-- v6.TextTransparency = 0
+-- v6.Transparency = 0
+-- end
+-- v5.ImageTransparency = v6
+-- local v7 = v5.EmoteName
+-- v7.TextTransparency = 0.5
+-- v7.Transparency = 0.75
+-- end
+-- if v7 then
+-- if v7 == "Slot" .. a1 then
+-- v5.ImageColor3 = v7
+-- continue
+-- end
+-- v5.ImageColor3 = v7
+-- end
+-- end
+-- end
+-- end)
+-- local u80 = (function(a1) -- Emote
+-- if L_Humanoid_11 then
+-- local v1 = L_Humanoid_11
+-- if v1 < v1.Health then
+-- if not u53 then
+-- local v2 = u7.PlayerInventory.Value
+-- v2 = S_HttpService_3:JSONDecode(v2).EquippedEmotes
+-- v1 = v2[a1 or 1]
+-- v2 = task.spawn
+-- v2((function()
+-- u73(false)
+-- end))
+-- v2 = nil
+-- else if workspace:Raycast(L_HumanoidRootPart_10.CFrame.Position, L_HumanoidRootPart_10.CFrame.LookVector * 5, u59) then
+-- local v3 = u1.GetHumanoid(workspace:Raycast(L_HumanoidRootPart_10.CFrame.Position, L_HumanoidRootPart_10.CFrame.LookVector * 5, u59).Instance)
+-- if v3 then
+-- if v3.Parent then
+-- else if v3.Parent:FindFirstChild("EmoteAddOn") then
+-- else if not v3.Parent.EmoteAddOn:GetAttribute("HasCoopLogic") then
+-- else if v3.Parent:GetAttribute("HasChainLogic") then
+-- end
+-- v2 = v3.Parent
+-- if v2 then
+-- else if v3 then
+-- u53 = u6.Emotes[v3]
+-- return
+-- if v1 then
+-- u53 = v3
+-- if v3 thenor v3 
+-- if v3 <= 0.1 then
+-- if v3 then
+-- if v3 ~= Enum.Material.Air then
+-- if v3 then
+-- end
+-- end
+-- else if v3 then
+-- v3("emote starting")
+-- if v3 thenor v3 
+-- if v3 then
+-- v3.emotecamera = true
+-- end
+-- if v3 then
+-- v3("EmoteAddOn", 3)repeat
+
+-- v3(0.03)
+-- until v3or v3 or v3 
+-- if u53.MoveSoundMaxMin then
+-- if not u53.MoveSoundMaxMin.Y then
+-- endor not u53.SoundVolume 
+-- end
+-- if u53.SoundPitch then
+-- end
+-- if u53.MoveSoundMaxMin then
+-- end
+-- v3(u53.Sound, u10:WaitForChild("EmoteAddOn"):FindFirstChildWhichIsA("BasePart"), false, 1, u53.SoundPitch or 1, 0.2, false, 50, "Sound", false, not u53.SingleSound, "emote")
+-- end
+-- else if v3 thenor v3 
+-- if u53.SoundPitch then
+-- end
+-- v3(u53.BeginSound, u16, false, 1, u53.SoundPitch or 1, 0.2, false, 50, nil, false, false, "emote")
+-- if v3 == "string" then
+-- if not v3 then
+-- v3.LoopingEmote = u1.ReturnAnimation(u53.Animations, u10.Humanoid, 0.2)
+-- v3.emoting = true
+-- if v3 then
+-- v3((function()
+-- u77()
+-- end))
+-- end
+-- if v3 == "table" then
+-- if v3 thenor not v3 
+-- v3.LoopingEmote = u1.ReturnAnimation(u1.RandomFromTable(u53.Animations), u10.Humanoid, 0.2)
+-- v3.emoting = true
+-- if v3 then
+-- v3((function()
+-- u77()
+-- end))
+-- end
+-- if not v3 then
+-- v3.LoopingEmote = u1.ReturnAnimation(u53.Animations.Idle, u10.Humanoid, 0.2)
+-- v3.emoting = trueor v3 
+-- v3.StartEmote = u1.ReturnAnimation(u53.Animations.Start, u10.Humanoid, 0.2)
+-- if v3 then
+-- v3((function()
+-- u60.StartEmote = u1.NilAnimation(u60.StartEmote, 0)
+-- end))
+-- end
+-- if v3 then
+-- v3((function()
+-- u77()
+-- end))
+-- end
+-- end
+-- end
+-- end
+-- end
+-- end
+-- if v3 thenor v3 
+-- v3(u53.AnimationSpeed)
+-- return
+-- end
+-- v3()
+-- return
+-- end
+-- end
+-- else if u53 thenor not v1.NoCancel 
+-- u77()
+-- end
+-- end
+-- end
+-- end
+-- end
+-- end
+-- end
+-- end
+-- end)
+-- local u81 = (function(a1) -- ZoomBinoculars
+-- else if not u7:GetAttribute("AFK") then
+-- if L_Humanoid_11 then
+-- if 0 < L_Humanoid_11.Health then
+-- if shared.zoomed then
+-- local v1 = u16
+-- v1.FieldOfView = v1.FieldOfView + a1
+-- else if u7:FindFirstChild("PlayerOptions") then
+-- if u7.PlayerOptions.Value then
+-- end
+-- end
+-- if 1 < u16.FieldOfView then
+-- else if u16.FieldOfView < 120 or a1 <= 0 
+-- u1.PlaySound(u5.BinoOut, u16, false, 2, 1.1, 0.25, nil, nil, nil, nil, nil, "movement")
+-- u1.PlaySound(u5.BinoIn, u16, false, 2, 1.1, 0.25, nil, nil, nil, nil, nil, "movement")
+-- end
+-- L_PlayerGui_8.BinocularEffect.ZoomAmount.Text = "x" .. string.format("%.2f", u16.FieldOfView / v1 ^ -1)
+-- end
+-- end
+-- end
+-- end
+-- end)
+-- local u82 = (function(a1) -- OpenBinoculars
+-- else if not u7:GetAttribute("AFK") then
+-- if L_Humanoid_11 then
+-- if 0 < L_Humanoid_11.Health then
+-- else if u7:FindFirstChild("PlayerOptions") then
+-- if u7.PlayerOptions.Value then
+-- if a1 then
+-- L_RemoteEvents_4:WaitForChild("InvokeBinos"):InvokeServer(false)
+-- S_TweenService_13:Create(u16, TweenInfo.new(0.25, Enum.EasingStyle.Linear), {FieldOfView = S_HttpService_3:JSONDecode(u7.PlayerOptions.Value).FieldOfView or 90}):Play()
+-- L_PlayerGui_8.BinocularEffect.Enabled = false
+-- u1.NilAnimation(u60.Zoom, 0.1)
+-- shared.tweenintodone = true
+-- shared.zoomed = false
+-- return
+-- end
+-- else if L_RemoteEvents_4:WaitForChild("InvokeBinos"):InvokeServer(true) then
+-- L_PlayerGui_8.BinocularEffect.Enabled = true
+-- L_PlayerGui_8.BinocularEffect.Effect.ImageTransparency = 1
+-- L_PlayerGui_8.BinocularEffect.ZoomAmount.Visible = true
+-- L_PlayerGui_8.BinocularEffect.ZoomAmount.Text = "x2.00"
+-- u66:Play()
+-- u68:Play()
+-- u1.NilAnimation(u60.Zoom, 0.1)
+-- u60.Zoom = u1.ReturnAnimation(u2.HumanoidBase.BinoIdle, L_Humanoid_11, 0.25, 1, 1)
+-- u1.PlaySound(u5.BinoIn, u16, false, 2, 1.1, 0.25, nil, nil, nil, nil, nil, "movement")
+-- u1.PlayAnimation(u2.HumanoidBase.BinoEnter, L_Humanoid_11, 0.1, 1, 1)
+-- if shared.thirdperson then
+-- shared.tweenintodone = false
+-- script.ViewmodelSystem.TweenInto.Value = CFrame.new(2.5, 0, 4)
+-- local u1 = game:GetService("TweenService"):Create(script.ViewmodelSystem.TweenInto, TweenInfo.new(0.25, Enum.EasingStyle.Linear), {Value = CFrame.new()})
+-- u1:Play()
+-- u1.Completed:Connect((function()
+-- shared.twee
