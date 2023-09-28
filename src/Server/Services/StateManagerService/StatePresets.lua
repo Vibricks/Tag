@@ -9,6 +9,19 @@ local States = {
 		StateType = "Bool";
 	};
 
+	["CanSprint"] = {
+		StartTime = os.clock();
+		Duration = 0;
+		StateType = "Timed";
+	};
+
+	
+	["CanAttack"] = {
+		StartTime = os.clock();
+		Duration = 0;
+		StateType = "Timed";
+	};
+
 
 	["Sprinting"] = {
 		Bool = false;
@@ -16,7 +29,7 @@ local States = {
 	};
 
 
-	["TimzedFreeze"] = {
+	["TimedFreeze"] = {
 		StartTime = os.clock();
 		Duration = 0;
 		StateType = "Timed";

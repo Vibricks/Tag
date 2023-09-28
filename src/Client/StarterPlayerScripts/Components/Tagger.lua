@@ -23,13 +23,12 @@ local OnlyThisClient = {}
 
 function OnlyThisClient.ShouldConstruct(component)
     local bool = component.Instance == Players.LocalPlayer.Character
-    warn("Should extend", bool)
     return bool
 end
 
 
 local module = Component.new({
-    Tag = "Chasers",
+    Tag = "Taggers",
     Extensions =  {OnlyThisClient}
 
 })
@@ -75,8 +74,6 @@ end
 
 
 function module:Construct()
-    warn("Constructing Chaser Component")
-    print(self.Instance)
     local Player = game.Players.LocalPlayer
     local PlayerGui = Player:WaitForChild("PlayerGui")
     local RoundUI = PlayerGui:WaitForChild("RoundUI")

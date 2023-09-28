@@ -12,7 +12,7 @@ local Util = require(ReplicatedStorage.Shared.Util)
 local GameInfo = ReplicatedStorage.GameInfo
 
 local INTERMISSION_DURATION = 5
-local REQUIRED_PLAYERS = 1--RunService:IsStudio() and 1 or 2
+local REQUIRED_PLAYERS = RunService:IsStudio() and 1 or 2
 
 local StartGameSignal = Signal.new()
 
@@ -179,9 +179,9 @@ function StartGame(...)
 				local args = { ... }
 				local raceResult = args[1]
 				print(raceResult)
-				if raceResult == "WinConditionMet" then
+				if raceResult == "Win Condition Met" then
 					GameInfo.ServerMessage.Value = "No more runners remain!"
-					Promise.delay(2):await()
+					Promise.delay(2)
 				end
 			end):andThenReturn(CleanupGame)
 		end)

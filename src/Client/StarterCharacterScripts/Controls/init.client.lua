@@ -19,19 +19,19 @@ local Signal = require(ReplicatedStorage.Packages.Signal)
 local Util = require(ReplicatedStorage.Shared.Util)
 local Component = require(ReplicatedStorage.Packages.Component)
 
-local LedgeGrabbing = require(script.LedgeGrabbing)
+local LedgeGrabbing = require(script.Climbing)
 
 local BeginAcceleration = Signal.new()
 
 local RoundService 
 local InputService 
 local AnimationController 
-local ChaserComponent
+local TaggerComponent
 Knit.OnStart():andThen(function()
     RoundService = Knit.GetService("RoundService")
     InputService = Knit.GetService("InputService")
     AnimationController = Knit.GetController("AnimationController")
-    ChaserComponent =  require(StarterPlayerScripts.Components.Chaser)
+    TaggerComponent =  require(StarterPlayerScripts.Components.Tagger)
 end)
 
 local Connections = {}
@@ -149,7 +149,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     if input.KeyCode == Enum.KeyCode.LeftShift then
         InputService:ToggleSprint():andThen(function(Verified)
             if Verified == true then
-                local SprintAnim = AnimationController:GetAnimation(Humanoid, "Sprint")
+                local SprintAnim = AnimationController:GetAnimation("Sprint")
                 SprintAnim:Play()
                 while Character:GetAttribute("Sprinting") do
                     if Humanoid.MoveDirection == Vector3.new()then
@@ -176,11 +176,11 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
         end
     elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
         --InputService:ProcessClick()
-        local chaserObject = ChaserComponent:FromInstance(Character)
-        if chaserObject then
-            chaserObject:Swing()
+        local TaggerObject = TaggerComponent:FromInstance(Character)
+        if TaggerObject then
+            TaggerObject:Swing()
         else
-            warn("you're not a chaser")
+            warn("you're not a Tagger")
         end
     elseif input.KeyCode == Enum.KeyCode.Space then
         if Character:GetAttribute("Sliding")  then
@@ -216,8 +216,8 @@ end)
 UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
     if gameProcessedEvent then return end
     if input.KeyCode == Enum.KeyCode.LeftShift then
-        local Sprint = AnimationController:GetAnimation(Humanoid, "Sprint")
-        Sprint:Stop()
+        --local Sprint = AnimationController:GetAnimation(Humanoid, "Sprint")
+        --Sprint:Stop()
         InputService:ToggleSprint()
     end
 end)

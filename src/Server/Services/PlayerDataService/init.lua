@@ -30,7 +30,7 @@ local defaultPlayerData = {
     },
 
     Perks = {
-        Chaser = {},
+        Tagger = {},
         Runner = {},
     }
 }

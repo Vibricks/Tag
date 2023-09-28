@@ -10,7 +10,7 @@ local TeamService = Knit.CreateService {
 local RoundService 
 
 TeamService.DefaultTeamColors = {
-    Chasers = Color3.fromRGB(197, 60, 60),
+    Taggers = Color3.fromRGB(197, 60, 60),
     Runners = Color3.fromRGB(34, 133, 255),
 }
 
