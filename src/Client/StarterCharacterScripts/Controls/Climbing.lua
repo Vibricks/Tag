@@ -19,6 +19,8 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local Util = require(ReplicatedStorage.Shared.Util)
 
+local StateReader = require(ReplicatedStorage.Shared.StateReader)
+
 local InputService
 local AnimationController 
 
@@ -43,7 +45,7 @@ local module = {}
 
 function createIgnorePart(CFrame)
 	local ignorePart = Instance.new("Part")
-	ignorePart.Parent = workspace
+	ignorePart.Parent = workspace.Ignore
 	ignorePart.Anchored = true
 	ignorePart.Size = Vector3.one
 	ignorePart.CFrame = CFrame
@@ -57,6 +59,7 @@ end
 --check if part is above when tryin to vault or move
 
 local function isLedge(wallhitResults)
+	if not wallhitResults then return end
 	local ledge = wallhitResults.Instance
 	local localPos = ledge.CFrame:PointToObjectSpace(wallhitResults.Position)
 	local localLedgePos = Vector3.new(localPos.X, wallhitResults.Instance.Size.Y/2, localPos.Z)
@@ -71,6 +74,24 @@ local function isLedge(wallhitResults)
 		end
 	end
 	return false
+end
+
+function module.EndLedgeGrab()
+	if StateReader:IsStateEnabled(Character, "LedgeGrabbing") then
+		currentlyGrabbingLedge = false
+		InputService:ToggleLedgeGrab(false)
+		AnimationController:StopAnimation("LedgeGrab")
+
+		Humanoid.AutoRotate = true
+		HRP.Anchored = false
+		Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		--grabAnim:Stop()
+		
+		--check if it exists and then disconnect
+		if vaultConnection then vaultConnection:Disconnect() end
+
+		if ledgePart then ledgePart:Destroy() end
+	end
 end
 
 local function toggleLedgeGrab(bool, ledgeOffset)
@@ -92,70 +113,101 @@ local function toggleLedgeGrab(bool, ledgeOffset)
 			Humanoid:ChangeState(Enum.HumanoidStateType.Seated)
 		end)
 	else
-		currentlyGrabbingLedge = false
-		InputService:ToggleLedgeGrab(false)
-		AnimationController:StopAnimation("LedgeGrab")
-
-		Humanoid.AutoRotate = true
-		HRP.Anchored = false
-		Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-		--grabAnim:Stop()
-		
-		--check if it exists and then disconnect
-		if vaultConnection then vaultConnection:Disconnect() end
-
-		if ledgePart then ledgePart:Destroy() end
+		module.EndLedgeGrab()
 	end
 end
 
 local tweenConnection
 local climbAnim = AnimationController:GetAnimation("Scaling", {Looped = true})
 
-local function toggleClimb(bool, wallhitResults)
-	
-	local function endClimb()
+
+function module.EndClimb()
+	if StateReader:IsStateEnabled(Character, "Climbing") then
 		currentlyClimbing = false
 		Humanoid.AutoRotate = true
 		HRP.Anchored = false
 
 		if climbConnection then climbConnection:Disconnect() end
 		if tweenConnection then tweenConnection:Disconnect() end
+		if BP then BP:Destroy() end
 
 		if climbPart then climbPart:Destroy() end
+		--if BP then BP:Destroy() end
 		if climbAnim and climbAnim.IsPlaying then climbAnim:Stop() end
-		--AnimationController:StopAnimation("Scaling")
+		InputService:ToggleClimb(false)
+		--Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
 	end
+end
+
+local function toggleClimb(bool, wallhitResults)
+
 	if bool == true then
 		currentlyClimbing = true
-		local startingPos = wallhitResults.Position 
+		InputService:ToggleClimb(true)
+		local startingPos = wallhitResults.Position
 		local Offset = CFrame.lookAt(startingPos, startingPos - wallhitResults.Normal) 
 		
 
 		climbPart = createIgnorePart(Offset + Offset.LookVector * -1.5)
-		local tween = TweenService:Create(climbPart, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = climbPart.CFrame*CFrame.new(0,20,0)})
-		tween:Play()
+		climbPart.Size = Vector3.new(3,3,3)
+		climbPart.Anchored = false
+		climbPart.Transparency = 0
+		--local tween = TweenService:Create(climbPart, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = climbPart.CFrame*CFrame.new(0,20,0)})
+		--tween:Play()
+		BP = Instance.new("BodyPosition")
+		BP.MaxForce = Vector3.new(1e5,1e5,1e5)
+		BP.Parent = climbPart
+		BP.P = 5000
+		BP.D = 800
 		climbAnim:Play()
 		climbAnim:AdjustSpeed(1.5)
+		BP.Position = (climbPart.CFrame*CFrame.new(0,20,0)).Position
+
+		-- task.defer(function()
+		-- 	local start = climbPart.Position
+		-- 	local endPos = climbPart.Position + Vector3.new(0, 20, 0)
+		-- 	local duration = 60 -- Total duration of the animation
+		-- 	for i = 1, duration do
+		-- 		if climbPart then
+		-- 			local t = i / duration
+		-- 			local easedT = math.sin(t * (math.pi / 2)) -- Sine ease-out function
+		-- 			local x = Util:Lerp(start, endPos, easedT)
+		-- 			climbPart.Position = x
+		-- 		else
+		-- 			break
+		-- 		end
+		-- 		RunService.RenderStepped:Wait()
+		-- 	end
+			
+		-- end)
+
+		--BP.Position = climbPart.Position+Vector3.new(0,20,0)
 
 		climbConnection = RunService.RenderStepped:Connect(function(dt)
+
 			HRP.Anchored = true
 			Humanoid.AutoRotate = false -- so shift lock doesnt't rotate character
 			HRP.CFrame = HRP.CFrame:Lerp(CFrame.lookAt(climbPart.Position, (climbPart.CFrame * CFrame.new(0, 0, -1)).Position), .25)
-			Humanoid:ChangeState(Enum.HumanoidStateType.Climbing)
+			--Humanoid:ChangeState(Enum.HumanoidStateType.Climbing)
 			local wallhitResults = workspace:Raycast(HRP.CFrame.Position, HRP.CFrame.LookVector * 5, raycastParams)
-			local foundLedge, ledgeOffset = isLedge(wallhitResults)
-
-			if foundLedge and not currentlyGrabbingLedge then
-				endClimb()
-				toggleLedgeGrab(true, ledgeOffset)
+			if wallhitResults and wallhitResults.Instance and wallhitResults.Instance.CanCollide == true and wallhitResults.Instance.Anchored == true then
+				local foundLedge, ledgeOffset =  isLedge(wallhitResults)
+				if foundLedge and not currentlyGrabbingLedge then
+					module.EndClimb()
+					toggleLedgeGrab(true, ledgeOffset)
+				end
 			end
 
 		end)
-		tweenConnection = tween.Completed:Connect(function(playbackState)
-			endClimb()
-		end)
+		 task.delay(1, function()
+		 	module.EndClimb()
+
+		 end)
+		-- tweenConnection = tween.Completed:Connect(function(playbackState)
+		--	module.EndClimb()
+		--end)
 	else
-		endClimb()
+		module.EndClimb()
 	end
 end
 
