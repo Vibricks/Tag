@@ -201,9 +201,7 @@ function CleanupGame(...)
 end
 
 function StartGame(...)
-	print(...)
 	return Promise.new(function(resolve, reject)
-		--print("Num Ready Players:", #RoundService.Participants)
 		if #RoundService.Participants >= REQUIRED_PLAYERS then
 			local CurrentGamemode = GameInfo.CurrentGamemode.Value
 			local module = GamemodeCache[CurrentGamemode]
@@ -220,14 +218,11 @@ function StartGame(...)
 			local race = Promise.race({ NotEnoughPlrsOnDeduction(), module.WinCondition() }) --* A race to end the game based on who wins first, time running out or not enough players to continue
 			return race:andThen(function(...)
 				RoundService.Signals.EndTimer:Fire()
-				warn("race complete")
 				local args = { ... }
 				local raceResult = args[1]
 				local matchResults = args[2] or {}
 				matchResults.WIN_TYPE = module.Config.WIN_TYPE
-				print(raceResult)
 				if raceResult == "Not Enough Players" then
-					print(#RoundService.Participants)
 					if #RoundService.Participants >= 1 then
 						local Team = TeamService:GetPlayerTeam(RoundService.Participants[1])
 						matchResults.Winner = Team.Name
@@ -239,7 +234,6 @@ function StartGame(...)
 					local ThumbnailType = Enum.ThumbnailType.HeadShot
 					local ThumbnailSize = Enum.ThumbnailSize.Size352x352
 					matchResults.Thumbnail =  game.Players:GetUserThumbnailAsync(matchResults.MVP.UserId,ThumbnailType, ThumbnailSize) 
-					warn("MVP = ", matchResults.MVP.Name .. "!!!")
 				end
 				task.wait(3)
 				RoundService.Client.GameOver:FireFilter(function(plr)

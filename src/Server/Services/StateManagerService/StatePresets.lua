@@ -91,7 +91,11 @@ local States = {
 		Duration = 0;
 		StateType = "Timed";
 	};
-	
+	["Ragdolled"] = {
+		StartTime = tick();
+		Duration = 0;
+		StateType = "Timed";
+	};
 	
 	["EndLag"] = {
 		StartTime = tick();

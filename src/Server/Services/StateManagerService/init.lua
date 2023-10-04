@@ -1,11 +1,13 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 local RunService = game:GetService("RunService")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Util = require(ReplicatedStorage.Shared.Util)
 local ReplicaService = require(ReplicatedStorage.Packages.ReplicaService)
 local StateReader = require(ReplicatedStorage.Shared.StateReader)
 local StatePresets = require(script.StatePresets)
-local RagdollSystem = require(ReplicatedStorage.)
+--local RagdollSystem = require(ReplicatedStorage.Packages.RagdollSystem)
+local RagdollManager = require(ServerScriptService.Modules.RagdollManager)
 
 local module = Knit.CreateService({
 	Name = "StateManagerService",
@@ -61,6 +63,15 @@ function module.Initialize(Character)
 	Humanoid.Died:Connect(function()
 		if module.CharacterProfiles[Character] then
 			CleanUpCharacterData(Character)
+		end
+	end)
+	--// make sure appearance is loaded before building ragdoll
+	task.defer(function()
+		if not Player:HasAppearanceLoaded() then
+			Player.CharacterAppearanceLoaded:Wait()
+		end
+		if Player.Parent then
+			RagdollManager.BuildRagdoll(Character)
 		end
 	end)
 end

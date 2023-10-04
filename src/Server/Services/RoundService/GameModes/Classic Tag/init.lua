@@ -14,7 +14,7 @@ local RoundUtil = require(script.Parent.Parent.RoundUtil)
 local module = {}
 
 module.Config = {
-	DURATION = 10,
+	DURATION = 60,
 	WIN_TYPE = "ONE_MVP",
 }
 
