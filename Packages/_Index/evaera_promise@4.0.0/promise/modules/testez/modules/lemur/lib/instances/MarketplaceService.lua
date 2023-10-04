@@ -3,19 +3,19 @@ local InstanceProperty = import("../InstanceProperty")
 local Signal = import("../Signal")
 local MarketplaceService = BaseInstance:extend("MarketplaceService")
 
-MarketplaceService.properties.PromptPurTaggerequested = InstanceProperty.readOnly({
+MarketplaceService.properties.PromptPurchaseRequested = InstanceProperty.readOnly({
 	getDefault = function()
 		return Signal.new()
 	end,
 })
 
-MarketplaceService.properties.PromptProductPurTaggerequested = InstanceProperty.readOnly({
+MarketplaceService.properties.PromptProductPurchaseRequested = InstanceProperty.readOnly({
 	getDefault = function()
 		return Signal.new()
 	end,
 })
 
-MarketplaceService.properties.PromptGamePassPurTaggerequested = InstanceProperty.readOnly({
+MarketplaceService.properties.PromptGamePassPurchaseRequested = InstanceProperty.readOnly({
 	getDefault = function()
 		return Signal.new()
 	end,

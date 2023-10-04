@@ -10,14 +10,20 @@ local States = {
 	};
 
 	["CanSprint"] = {
-		StartTime = os.clock();
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed";
 	};
 
 	
 	["CanAttack"] = {
-		StartTime = os.clock();
+		StartTime = tick();
+		Duration = 0;
+		StateType = "Timed";
+	};
+
+	["Vaulting"] = {
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed";
 	};
@@ -30,71 +36,71 @@ local States = {
 
 
 	["TimedFreeze"] = {
-		StartTime = os.clock();
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed";
 	};
 
 	["Stunned"] = {
-		StartTime = os.clock();
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed"
 	};
 
 	["ForceRagdoll"] = {
-		StartTime = os.clock();
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed"
 	};
 
 	
 	["Iframes"] = {
-		StartTime = os.clock();
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed"
 	};
 
 	["Speed"] = {
 		Priority = 1;
-		StartTime = os.clock();
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed";
 		DefaultSpeed = 16;
 	};
 
 	["Attacking"] = {
-		StartTime = os.clock();
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed";
 	};
 	
 	["Dashing"] = {
-		StartTime = os.clock();
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed";
 	};
 
 	["Sliding"] = {
-		StartTime = os.clock();
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed";
 	};
 	
 	["Climbing"] = {
-		StartTime = os.clock();
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed";
 	};
 	
 	
 	["EndLag"] = {
-		StartTime = os.clock();
+		StartTime = tick();
 		Duration = 0;
 		StateType = "Timed";
 	};
 	
 	["Emoting"] = {
-		StartTime = os.clock();
+		StartTime = tick();
 		Bool = false;
 		StateType = "Bool";
 	};

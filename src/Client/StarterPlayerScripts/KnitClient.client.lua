@@ -11,6 +11,7 @@ for _, v in pairs(Controllers:GetDescendants()) do
 	end
 end
 
+
 Knit.Start():andThen(function()
 	for i, v in pairs(StarterPlayer.StarterPlayerScripts.Components:GetChildren()) do
 		require(v)

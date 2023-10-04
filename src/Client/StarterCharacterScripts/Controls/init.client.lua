@@ -19,7 +19,8 @@ local Signal = require(ReplicatedStorage.Packages.Signal)
 local Util = require(ReplicatedStorage.Shared.Util)
 local Component = require(ReplicatedStorage.Packages.Component)
 
-local LedgeGrabbing = require(script.Climbing)
+local ClimbModule = require(script.Climbing)
+local VaultingModule = require(script.Vaulting)
 
 local BeginAcceleration = Signal.new()
 
@@ -32,6 +33,10 @@ Knit.OnStart():andThen(function()
     InputService = Knit.GetService("InputService")
     AnimationController = Knit.GetController("AnimationController")
     TaggerComponent =  require(StarterPlayerScripts.Components.Tagger)
+    InputService.CancelClimbing:Connect(function()
+        ClimbModule.EndClimb()
+        ClimbModule.EndLedgeGrab()
+    end)
 end)
 
 local Connections = {}
@@ -179,8 +184,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
         local TaggerObject = TaggerComponent:FromInstance(Character)
         if TaggerObject then
             TaggerObject:Swing()
-        else
-            warn("you're not a Tagger")
         end
     elseif input.KeyCode == Enum.KeyCode.Space then
         if Character:GetAttribute("Sliding")  then

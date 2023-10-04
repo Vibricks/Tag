@@ -95,7 +95,7 @@ local function playerAdded(player)
 					ClassToken = playerProfileClassToken,
 					Tags = {Player = player},
 					Data = profile.Data,
-					Replication = "All",
+					Replication = player,
 				}),
 			}
 			
@@ -104,7 +104,6 @@ local function playerAdded(player)
 			
 			connectLeaderstats(player_profile)
 
-            print(profile.Data)
 		else
 			print(string.format("%s left while their profile was being loaded", player.Name))
 			profile:Release()

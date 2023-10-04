@@ -1,0 +1,8 @@
+[package]
+name = "etheroit/topbarplus"
+version = "1.0.1"
+license = "MIT License"
+authors = ["ForeverHD"]
+description = "ForeverHD's TopbarPlus forked for wally"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"

@@ -58,6 +58,15 @@ end
 
 --check if part is above when tryin to vault or move
 
+local function GetUp()
+	local BodyVelocity = Instance.new("BodyVelocity")
+	BodyVelocity.Parent = Character:WaitForChild("Head")
+	BodyVelocity.P = 9e9
+	BodyVelocity.MaxForce = Vector3.one * math.huge
+	BodyVelocity.Velocity = Vector3.new(0,40,0) + HRP.CFrame.LookVector * 5
+	game.Debris:AddItem(BodyVelocity,.15)
+end
+
 local function isLedge(wallhitResults)
 	if not wallhitResults then return end
 	local ledge = wallhitResults.Instance
@@ -77,10 +86,12 @@ local function isLedge(wallhitResults)
 end
 
 function module.EndLedgeGrab()
-	if StateReader:IsStateEnabled(Character, "LedgeGrabbing") then
+	print("Ending Grab")
+	--local IsLedgeGrabbing = StateReader:IsStateEnabled(Character, "LedgeGrabbing")
+	if currentlyGrabbingLedge then
+		--print("Okay we can end the grab", IsLedgeGrabbing)
 		currentlyGrabbingLedge = false
 		InputService:ToggleLedgeGrab(false)
-		AnimationController:StopAnimation("LedgeGrab")
 
 		Humanoid.AutoRotate = true
 		HRP.Anchored = false
@@ -91,6 +102,11 @@ function module.EndLedgeGrab()
 		if vaultConnection then vaultConnection:Disconnect() end
 
 		if ledgePart then ledgePart:Destroy() end
+		GetUp()
+		task.delay(0.15, function()
+			AnimationController:StopAnimation("LedgeGrab")
+		end)
+	
 	end
 end
 
@@ -112,108 +128,146 @@ local function toggleLedgeGrab(bool, ledgeOffset)
 			HRP.CFrame = HRP.CFrame:Lerp(CFrame.lookAt(ledgePart.Position, (ledgePart.CFrame * CFrame.new(0, 0, -1)).Position), .25)
 			Humanoid:ChangeState(Enum.HumanoidStateType.Seated)
 		end)
-	else
-		module.EndLedgeGrab()
+
+		task.delay(0.1, module.EndLedgeGrab)
+	--else
+	--	module.EndLedgeGrab()
 	end
 end
 
 local tweenConnection
 local climbAnim = AnimationController:GetAnimation("Scaling", {Looped = true})
-
+climbAnim.Priority = Enum.AnimationPriority.Action2
+local BodyVelocity
+local BodyGyro
 
 function module.EndClimb()
-	if StateReader:IsStateEnabled(Character, "Climbing") then
+	if currentlyClimbing then
 		currentlyClimbing = false
 		Humanoid.AutoRotate = true
-		HRP.Anchored = false
 
 		if climbConnection then climbConnection:Disconnect() end
-		if tweenConnection then tweenConnection:Disconnect() end
-		if BP then BP:Destroy() end
-
-		if climbPart then climbPart:Destroy() end
-		--if BP then BP:Destroy() end
 		if climbAnim and climbAnim.IsPlaying then climbAnim:Stop() end
+		if BodyVelocity then BodyVelocity.Velocity = Vector3.zero BodyVelocity:Destroy() end
+		if BodyGyro then BodyGyro:Destroy() end
+
 		InputService:ToggleClimb(false)
-		--Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
 	end
 end
 
+
+local ClimbDebounce = false
 local function toggleClimb(bool, wallhitResults)
+	local IsClimbing = StateReader:IsStateEnabled(Character, "Climbing")
+	local IsLedgeGrabbing = StateReader:IsStateEnabled(Character, "LedgeGrabbing")
+	if bool == true and not  IsClimbing and not IsLedgeGrabbing and not ClimbDebounce then
+		ClimbDebounce = true
+		local Duration = 1
+		local ClimbingPromise = Promise.new(function(resolve, reject, onCancel)
+			if HRP:FindFirstChild("ClimbGyro") then HRP.ClimbGyro:Destroy() end
+			if HRP:FindFirstChild("ClimbVelocity") then HRP.ClimbGyro:Destroy() end
+			InputService:ToggleClimb(true)
+			currentlyClimbing = true
+			local Speed = 30
 
-	if bool == true then
-		currentlyClimbing = true
-		InputService:ToggleClimb(true)
-		local startingPos = wallhitResults.Position
-		local Offset = CFrame.lookAt(startingPos, startingPos - wallhitResults.Normal) 
-		
+			BodyGyro = Instance.new("BodyGyro")
+			BodyGyro.Name = "ClimbGyro"
+			BodyGyro.P = 9e9
+			BodyGyro.D = 1
+			BodyGyro.MaxTorque = Vector3.one * math.huge
+			BodyGyro.Parent = HRP
+			BodyGyro.CFrame = CFrame.new(HRP.Position, HRP.Position + (-wallhitResults.Normal))
+			game.Debris:AddItem(BodyGyro, Duration)
+	
+			BodyVelocity = Instance.new("BodyVelocity")
+			BodyVelocity.Name = "ClimbVelocity"
+			BodyVelocity.MaxForce = Vector3.one * math.huge
+			BodyVelocity.P = 1e9
+			BodyVelocity.Velocity = Vector3.zero
+			BodyVelocity.Parent = HRP
+			game.Debris:AddItem(BodyVelocity, Duration)
+			climbAnim:Play()
+			climbAnim:AdjustSpeed(1.75)
 
-		climbPart = createIgnorePart(Offset + Offset.LookVector * -1.5)
-		climbPart.Size = Vector3.new(3,3,3)
-		climbPart.Anchored = false
-		climbPart.Transparency = 0
-		--local tween = TweenService:Create(climbPart, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = climbPart.CFrame*CFrame.new(0,20,0)})
-		--tween:Play()
-		BP = Instance.new("BodyPosition")
-		BP.MaxForce = Vector3.new(1e5,1e5,1e5)
-		BP.Parent = climbPart
-		BP.P = 5000
-		BP.D = 800
-		climbAnim:Play()
-		climbAnim:AdjustSpeed(1.5)
-		BP.Position = (climbPart.CFrame*CFrame.new(0,20,0)).Position
+			local StartPoint = CFrame.new(wallhitResults.Position + Vector3.new(0, 0, -5))-- + ledgeOffset.LookVector * -1
 
-		-- task.defer(function()
-		-- 	local start = climbPart.Position
-		-- 	local endPos = climbPart.Position + Vector3.new(0, 20, 0)
-		-- 	local duration = 60 -- Total duration of the animation
-		-- 	for i = 1, duration do
-		-- 		if climbPart then
-		-- 			local t = i / duration
-		-- 			local easedT = math.sin(t * (math.pi / 2)) -- Sine ease-out function
-		-- 			local x = Util:Lerp(start, endPos, easedT)
-		-- 			climbPart.Position = x
-		-- 		else
-		-- 			break
-		-- 		end
-		-- 		RunService.RenderStepped:Wait()
-		-- 	end
-			
-		-- end)
+			climbConnection = RunService.RenderStepped:Connect(function(deltaTime)
+				Humanoid.AutoRotate = false
+	
+				BodyVelocity.Velocity = StartPoint.UpVector * Speed
+				local wallNormal = -wallhitResults.Normal
+				BodyGyro.CFrame = CFrame.new(HRP.Position, HRP.Position + wallNormal)
+	
+				--local p = (HRP.CFrame * CFrame.new(0,2,2)).Position
+				local wallhitResults = Promise.new(function(resolve)
+					--for i = 1, 1 do
+						local origin = (HRP.CFrame * CFrame.new(0,0,-.5)).Position
+						local dir =  HRP.CFrame.LookVector * 10
+						local results = workspace:Raycast(origin ,dir, raycastParams)
 
-		--BP.Position = climbPart.Position+Vector3.new(0,20,0)
+						if results and results.Instance then
+							local foundLedge, ledgeOffset = isLedge(wallhitResults)
+							if foundLedge and not currentlyGrabbingLedge then
+								resolve("LedgeFound", {ledgeOffset = ledgeOffset})
+								--break
+							 end
+						else
+							resolve("NoMoreWall")
+							--if i == 3 then resolve("NoMoreWall") end
+						end
+					--end
+				end)
 
-		climbConnection = RunService.RenderStepped:Connect(function(dt)
+				local roofhitResults = Promise.new(function(resolve)
+					for i = 1, 3 do
+						local origin = (HRP.CFrame * CFrame.new((1+(-1*i))+1,2,0)).Position
+						local results = workspace:Raycast(origin, HRP.CFrame.UpVector * 2, raycastParams)
+						if results and results.Instance then
+							resolve("RoofHit")
+						end
+					end
+				end)
 
-			HRP.Anchored = true
-			Humanoid.AutoRotate = false -- so shift lock doesnt't rotate character
-			HRP.CFrame = HRP.CFrame:Lerp(CFrame.lookAt(climbPart.Position, (climbPart.CFrame * CFrame.new(0, 0, -1)).Position), .25)
-			--Humanoid:ChangeState(Enum.HumanoidStateType.Climbing)
-			local wallhitResults = workspace:Raycast(HRP.CFrame.Position, HRP.CFrame.LookVector * 5, raycastParams)
-			if wallhitResults and wallhitResults.Instance and wallhitResults.Instance.CanCollide == true and wallhitResults.Instance.Anchored == true then
-				local foundLedge, ledgeOffset =  isLedge(wallhitResults)
-				if foundLedge and not currentlyGrabbingLedge then
-					module.EndClimb()
-					toggleLedgeGrab(true, ledgeOffset)
-				end
-			end
+				return Promise.race({roofhitResults, wallhitResults}):andThen(function(...)
+					resolve(...)
+				end)
+
+
+			end)
+		end)
+
+		local ClimbDurationPromise = Promise.new(function(resolve)
+			task.wait(Duration)
+			resolve("ClimbTimeOver")
+		end):finally(function()
+			ClimbDebounce = false
 
 		end)
-		 task.delay(1, function()
-		 	module.EndClimb()
 
-		 end)
-		-- tweenConnection = tween.Completed:Connect(function(playbackState)
-		--	module.EndClimb()
-		--end)
+		local Race = Promise.race({ClimbingPromise, ClimbDurationPromise})
+		Race:andThen(function(Result, ExtraData)
+			module.EndClimb()
+			if Result == "NoMoreWall" then
+				local anim = AnimationController:PlayAnimation("LedgeGrab")
+				GetUp()
+				task.delay(.2, function()
+					anim:Stop()
+				end)
+			elseif Result == "ClimbTimeOver" then
+
+			elseif Result == "LedgeFound" then
+				local ledgeOffset = ExtraData.ledgeOffset
+				toggleLedgeGrab(true, ledgeOffset)
+			end
+		end)
 	else
 		module.EndClimb()
 	end
 end
 
 --detect ledges
-function module.detectWall()
-	if (Humanoid:GetState() == Enum.HumanoidStateType.Freefall or Humanoid:GetState() == Enum.HumanoidStateType.Jumping) then
+function module.detectWall(mobile)
+	if (Humanoid:GetState() == Enum.HumanoidStateType.Freefall or Humanoid:GetState() == Enum.HumanoidStateType.Jumping) or mobile then
 		local wallhitResults = workspace:Raycast(HRP.CFrame.Position, HRP.CFrame.LookVector * 5, raycastParams)
 		if wallhitResults then
 			if wallhitResults.Instance and wallhitResults.Instance.Anchored == true and wallhitResults.Instance.CanCollide == true then		
@@ -231,9 +285,9 @@ function module.detectWall()
 	elseif currentlyClimbing then
 		toggleClimb(false)
 	end
-
 end
 
+local lastPress = tick()
 --pc and console support
 UserInputService.InputBegan:Connect(function(input, gp)
 	if (input.KeyCode == Enum.KeyCode.ButtonA or input.KeyCode == Enum.KeyCode.Space) then
@@ -245,8 +299,22 @@ end)
 if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled and not UserInputService.GamepadEnabled and not GuiService:IsTenFootInterface() then
 	local jumpButton = Player.PlayerGui:WaitForChild("TouchGui"):WaitForChild("TouchControlFrame"):WaitForChild("JumpButton")
 	jumpButton.Activated:Connect(function()
-		module.detectWall()
+		module.detectWall(true)
 	end)
 end
 
+-- local mouse = Player:GetMouse()
+-- local LastClick = tick()
+-- mouse.Button1Up:Connect(function()
+-- 	if tick() - LastClick <= .35 then
+-- 	--if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled and not UserInputService.GamepadEnabled and not GuiService:IsTenFootInterface() then
+-- 		module.detectWall(true)
+-- 	--end
+-- 	end
+-- 	LastClick = tick()
+-- end)
+local UserGameSettings = UserSettings():GetService("UserGameSettings")
+UserGameSettings.RotationType = Enum.RotationType.CameraRelative
+
+Humanoid.AutoJumpEnabled = false
 return module

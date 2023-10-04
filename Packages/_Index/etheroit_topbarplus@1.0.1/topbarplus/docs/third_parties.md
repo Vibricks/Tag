@@ -1,0 +1,3 @@
+TopbarPlus supports the use of multiple Icon packages within a single experience. It achieves this by assigning the first-required package as the 'lead' package, then whenever a second package is required (such as via the Icon module), the lead package modules are used instead. Without this errors would occur such as overlapping icons.
+
+You don't have to do anything for your third-party applications. Simply use TopbarPlus as normal.
