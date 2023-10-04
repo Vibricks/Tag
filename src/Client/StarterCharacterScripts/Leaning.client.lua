@@ -1,4 +1,6 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local runService = game:GetService("RunService")
+local StateReader = require(ReplicatedStorage.Shared.StateReader)
 
 local MOMENTUM_FACTOR = 0.008
 local MIN_MOMENTUM = 0.285
@@ -20,6 +22,8 @@ end
 originalM6dC0 = m6d.C0
 
 runService.Heartbeat:Connect(function(dt)
+	local IsClimbing = StateReader:IsStateEnabled(character, "Climbing")
+	if IsClimbing then return end
 	local direction = humanoidRootPart.CFrame:VectorToObjectSpace(humanoid.MoveDirection)
 	local momentum = humanoidRootPart.CFrame:VectorToObjectSpace(humanoidRootPart.Velocity)*MOMENTUM_FACTOR
 	momentum = Vector3.new(

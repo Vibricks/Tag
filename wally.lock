@@ -8,14 +8,24 @@ version = "0.1.0"
 dependencies = []
 
 [[package]]
+name = "etheroit/topbarplus"
+version = "1.0.1"
+dependencies = []
+
+[[package]]
 name = "evaera/promise"
 version = "4.0.0"
 dependencies = []
 
 [[package]]
+name = "leostormer/ragdoll-system"
+version = "0.3.1"
+dependencies = [["Signal", "sleitnick/signal@1.5.0"], ["Trove", "sleitnick/trove@1.0.1"]]
+
+[[package]]
 name = "phant/tag"
 version = "0.1.0"
-dependencies = [["Component", "sleitnick/component@2.4.6"], ["Knit", "sleitnick/knit@1.5.1"], ["Promise", "evaera/promise@4.0.0"], ["ReplicaService", "brittonfischer/replicaservice@0.1.0"], ["Signal", "sleitnick/signal@1.5.0"], ["SimplePath", "untakeranonplay/simplepath@0.1.1"], ["Trove", "sleitnick/trove@1.0.1"]]
+dependencies = [["Component", "sleitnick/component@2.4.6"], ["Knit", "sleitnick/knit@1.5.1"], ["Promise", "evaera/promise@4.0.0"], ["RagdollSystem", "leostormer/ragdoll-system@0.3.1"], ["ReplicaService", "brittonfischer/replicaservice@0.1.0"], ["Signal", "sleitnick/signal@1.5.0"], ["SimplePath", "untakeranonplay/simplepath@0.1.1"], ["TopbarPlus", "etheroit/topbarplus@1.0.1"], ["Trove", "sleitnick/trove@1.0.1"]]
 
 [[package]]
 name = "sleitnick/comm"

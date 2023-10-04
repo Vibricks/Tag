@@ -14,3 +14,8 @@ Knit.Start():andThen(function()
 	end
 end)
 	:catch(warn)
+
+
+game:GetService("RunService").Stepped:Connect(function()
+	workspace:SetAttribute("ElaspedTime", tick())
+end)

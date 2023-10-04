@@ -58,6 +58,7 @@ module.AnimationFunctions = {
 		if Properties and Properties.Speed then
 			Anim:AdjustSpeed(Properties.Speed)
 		end
+		return Anim
 	end,
 	
 
@@ -90,7 +91,7 @@ function module:StopAllAnimations(humanoid)
 	end
 end
 
-function module:GetAnimation(animObj, animName, Properties)
+function module:GetAnimation(animName, Properties)
 	local char = Knit.Player.Character
 	if char then
 		local humanoid = char:WaitForChild("Humanoid")

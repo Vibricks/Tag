@@ -9,27 +9,32 @@ local Component = require(ReplicatedStorage.Packages.Component)
 
 local Util = require(ReplicatedStorage.Shared.Util)
 local MagnitudeHitbox = require(ReplicatedStorage.Shared.Hitboxes.MagnitudeHitbox)
+local StateReader = require(ReplicatedStorage.Shared.StateReader)
 
 local SFX = SoundService.SFX
 
 local AnimationController
 local InputService 
+local ReplicaInterfaceController
+local StateProfileReplica
+
 Knit.OnStart():andThen(function()
     AnimationController = Knit.GetController("AnimationController")
     InputService = Knit.GetService("InputService")
+    ReplicaInterfaceController = Knit.GetController("ReplicaInterfaceController")
+    StateProfileReplica = ReplicaInterfaceController:GetReplica("StateProfile")
 end)
 
 local OnlyThisClient = {}
 
 function OnlyThisClient.ShouldConstruct(component)
     local bool = component.Instance == Players.LocalPlayer.Character
-    warn("Should extend", bool)
     return bool
 end
 
 
 local module = Component.new({
-    Tag = "Chasers",
+    Tag = "Taggers",
     Extensions =  {OnlyThisClient}
 
 })
@@ -40,10 +45,14 @@ function module:Swing()
     local Humanoid = Character:FindFirstChild("Humanoid")
     local HRP = Character:FindFirstChild("HumanoidRootPart")
     if not HRP or not Humanoid or (Humanoid and Humanoid.Health <= 0) then return end
+    local IsSliding = StateReader:IsStateEnabled(Character, "Sliding")
+    local IsClimbing = StateReader:IsStateEnabled(Character, "Climbing")
+    local IsLedgeGrabbing = StateReader:IsStateEnabled(Character, "LedgeGrabbing")
 
-    local IsSliding = Character:GetAttribute("Sliding")
+
+
     if ReplicatedStorage.GameInfo.GameInProgress.Value == false then return end
-    if not SwingDebounce and not IsSliding and not Character:GetAttribute("LedgeGrabbing") then
+    if not SwingDebounce and not IsSliding and not IsLedgeGrabbing and not IsClimbing then
         local SwingRegistered = InputService:RegisterSwing()
         SwingDebounce = true
         AnimationController:PlayAnimation("Slap", {Priority = Enum.AnimationPriority.Action2, Speed = 2})
@@ -52,17 +61,19 @@ function module:Swing()
         local HitVictims = {}
         local HitboxPerFrame
         HitboxPerFrame = RunService.RenderStepped:Connect(function(deltaTime)
-            local HitboxInfo = {
-                Character = Character,
-                Range = 3,
-                MultipleVictims = false,
-            }
-            local HitResult, Victim = MagnitudeHitbox(HitboxInfo)
-            if HitResult and not HitVictims[Victim] then
-                print("We hit", Victim.Name)
-                HitVictims[Victim] = true
-                InputService:VerifyHit(Victim)
-                HitboxPerFrame:Disconnect()
+            if ReplicatedStorage.GameInfo.GameInProgress.Value == true then 
+                local HitboxInfo = {
+                    Character = Character,
+                    Range = 3,
+                    MultipleVictims = false,
+                }
+                local HitResult, Victim = MagnitudeHitbox(HitboxInfo)
+                if HitResult and not HitVictims[Victim] then
+                    print("We hit", Victim.Name)
+                    HitVictims[Victim] = true
+                    InputService:VerifyHit(Victim)
+                    HitboxPerFrame:Disconnect()
+                end
             end
         end)
         --! Hit detection here
@@ -75,8 +86,6 @@ end
 
 
 function module:Construct()
-    warn("Constructing Chaser Component")
-    print(self.Instance)
     local Player = game.Players.LocalPlayer
     local PlayerGui = Player:WaitForChild("PlayerGui")
     local RoundUI = PlayerGui:WaitForChild("RoundUI")

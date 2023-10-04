@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 
 local Util = require(ReplicatedStorage.Shared.Util)
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local ChaserComponent = require(ServerScriptService.Components.Chaser)
+--local TaggerComponent = require(ServerScriptService.Components.Tagger)
 
 local SFX = SoundService.SFX
 
@@ -14,13 +14,13 @@ local InputService = Knit.CreateService {
     Name = "InputService",
     Client = {
         ClientSlide = Knit.CreateSignal(),
+        CancelClimbing = Knit.CreateSignal(),
     },
 }
 
 local StateManagerService
 local AnimationService
 local RoundService 
-local SPRINT_SPEED_INCREASE = 15
 
 function InputService.Client:ToggleSprint(Player)
 	local Character = Player.Character
@@ -29,36 +29,20 @@ function InputService.Client:ToggleSprint(Player)
     local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
     local IsSliding = StateManagerService:IsStateEnabled(Character, "Sliding")
     local IsLedgeGrabbing = StateManagerService:IsStateEnabled(Character, "LedgeGrabbing")
+    local IsClimbing = StateManagerService:IsStateEnabled(Character, "Climbing")
+
     local IsSprintPaused =  Character:GetAttribute("PauseSprint")
 
     if not IsSprinting then
-
+        if IsSliding or IsClimbing or IsLedgeGrabbing then return end
         StateManagerService:UpdateState(Character, "Sprinting", true)
         Character:SetAttribute("Sprinting", true)
-
-        --AnimationService:PlayAnimation(Humanoid, "Sprint")
-        Humanoid.WalkSpeed = StateManagerService.Defaults.WalkSpeed + SPRINT_SPEED_INCREASE
-
-        -- while StateManagerService:IsStateEnabled(Character,"Sprinting") do
-		-- 	if  not StateManagerService:IsStateEnabled(Character,"Attacking") then
-        --         Humanoid.WalkSpeed = StateManagerService.Defaults.WalkSpeed + SPRINT_SPEED_INCREASE
-		-- 	end
-
-		-- 	if Humanoid.MoveDirection == Vector3.new()  then -- or SkillData.Skill == "Block" then
-		-- 		StateManagerService:UpdateState(Character, "Sprinting", false)
-
-		-- 		AnimationService:StopAnimation(Humanoid, "Sprint") --:LoadAnimation(Hum, Assets.Animations.Combat.Block)--Hum.Animator:LoadAnimation(Assets.Animations.Combat.Block)
-		-- 		Humanoid.WalkSpeed = 14
-		-- 		break 
-		-- 	end
-		-- 	RunService.Heartbeat:Wait()
-		-- end 
-        --Humanoid.JumpPower = 0
+        Humanoid.WalkSpeed = StateManagerService.Defaults.WalkSpeed + StateManagerService.Defaults.SPRINT_SPEED_INCREASE
         return true
     else
         StateManagerService:UpdateState(Character, "Sprinting", false)
         Character:SetAttribute("Sprinting", false)
-        if not IsSliding and not IsLedgeGrabbing then
+        if not IsSliding and not IsLedgeGrabbing and not IsClimbing then
             Humanoid.WalkSpeed = StateManagerService.Defaults.WalkSpeed
         end
     end
@@ -84,19 +68,19 @@ function InputService.Client:ToggleSlide(Player, Bool, ExtraData)
         local SLIDE_SPEED_INCREASE = 30
         if IsSprinting and (not  ExtraData or ExtraData and  ExtraData.CancelType ~= "Jump") then
             --AnimationService:PlayAnimation(Humanoid, "Sprint")
-            Humanoid.WalkSpeed = defaultSpeed + SPRINT_SPEED_INCREASE + SLIDE_SPEED_INCREASE
+            Humanoid.WalkSpeed = defaultSpeed + StateManagerService.Defaults.SPRINT_SPEED_INCREASE + SLIDE_SPEED_INCREASE
             task.delay(.35, function()
                 local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
 
                 if IsSprinting then
-                    Humanoid.WalkSpeed = defaultSpeed + SPRINT_SPEED_INCREASE
+                    Humanoid.WalkSpeed = defaultSpeed + StateManagerService.Defaults.SPRINT_SPEED_INCREASE
                 else
                     Humanoid.WalkSpeed = defaultSpeed
                 end
             end)
             --Humanoid.JumpPower = 0
         elseif IsSprinting then
-            Humanoid.WalkSpeed = defaultSpeed + SPRINT_SPEED_INCREASE
+            Humanoid.WalkSpeed = defaultSpeed + StateManagerService.Defaults.SPRINT_SPEED_INCREASE
         elseif not IsSprinting then
             Humanoid.WalkSpeed = defaultSpeed
             --Humanoid.JumpPower = 50
@@ -145,14 +129,32 @@ function InputService.Client:ToggleLedgeGrab(Player, Bool)
     local IsLedgeGrabbing = StateManagerService:IsStateEnabled(Character, "LedgeGrabbing")
 
     if Bool == true and not IsLedgeGrabbing then
-        Character:SetAttribute("LedgeGrabbing", true)
         Character:SetAttribute("PauseSprint", true)
-
+        StateManagerService:ChangeSpeed(Character, 5, .2, 1)
         StateManagerService:UpdateState(Character, "LedgeGrabbing", true)
     elseif Bool == false and IsLedgeGrabbing then
         StateManagerService:UpdateState(Character, "LedgeGrabbing", false)
-        Character:SetAttribute("LedgeGrabbing", false)
         Character:SetAttribute("PauseSprint", false)
+    end
+end
+
+function InputService.Client:ToggleClimb(Player)
+    local Character = Player.Character
+	local Humanoid,HRP = Character:FindFirstChild("Humanoid"),Character:FindFirstChild("HumanoidRootPart")
+
+    local IsSliding = StateManagerService:IsStateEnabled(Character, "Sliding")
+    local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
+    local IsLedgeGrabbing = StateManagerService:IsStateEnabled(Character, "LedgeGrabbing")
+    local IsClimbing = StateManagerService:IsStateEnabled(Character, "Climbing")
+
+    local function EndClimb()
+        StateManagerService:UpdateState(Character, "Climbing", 0)
+    end
+
+    if not IsClimbing then
+        StateManagerService:UpdateState(Character, "Climbing", 5)
+    else
+        EndClimb()
     end
 end
 
@@ -166,7 +168,7 @@ function InputService.Client:VerifyHit(Player, Victim)
     local IsSliding = StateManagerService:IsStateEnabled(Character, "Sliding")
     local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
     local IsAttacking = StateManagerService:IsStateEnabled(Character, "Attacking")
-    local IsChaser = CollectionService:HasTag(Character, "Chasers")
+    local IsTagger = CollectionService:HasTag(Character, "Taggers")
     local GameInProgress = ReplicatedStorage.GameInfo.GameInProgress.Value
 
     local Magnitude = (HRP.Position - VictimHRP.Position).Magnitude
@@ -185,15 +187,32 @@ function InputService.Client:RegisterSwing(Player)
     local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
     local IsAttacking = StateManagerService:IsStateEnabled(Character, "Attacking")
     local LedgeGrabbing = StateManagerService:IsStateEnabled(Character, "LedgeGrabbing")
-    local IsChaser = CollectionService:HasTag(Character, "Chasers")
+    local IsClimbing = StateManagerService:IsStateEnabled(Character, "Climbing")
+    local CanAttack = StateManagerService:IsStateEnabled(Character, "CanAttack")
+    local IsTagger = CollectionService:HasTag(Character, "Taggers")
     local GameInProgress = ReplicatedStorage.GameInfo.GameInProgress.Value
-    if not IsAttacking and IsChaser and not IsSliding and GameInProgress and not LedgeGrabbing then
+    if not IsAttacking and IsTagger and not IsSliding and GameInProgress and not LedgeGrabbing and CanAttack then
         --Util:PlaySoundAtPosition(SFX.swipe, HRP)
         StateManagerService:UpdateState(Character, "Attacking", 0.75)
         return true
     end
     return false
 end
+
+function InputService.Client:Vault(Player)
+    local Character = Player.Character
+	local Humanoid,HRP = Character:FindFirstChild("Humanoid"),Character:FindFirstChild("HumanoidRootPart")
+    if not Character or not Humanoid then return end
+    local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
+    if IsSprinting then
+        StateManagerService:UpdateState(Character, "Vaulting", 0.75)
+        task.wait(0.75)
+        local Speed = StateManagerService.Defaults.WalkSpeed + StateManagerService.Defaults.SPRINT_SPEED_INCREASE + 30
+        StateManagerService:ChangeSpeed(Character, Speed, .35, 2)
+    end
+end
+
+
 
 -- function InputService.Client:ProcessClick(Player)
 --     if ReplicatedStorage.GameInfo.GameInProgress.Value == false then return end
@@ -203,20 +222,20 @@ end
 --     local IsSliding = StateManagerService:IsStateEnabled(Character, "Sliding")
 --     local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
 --     local IsAttacking = StateManagerService:IsStateEnabled(Character, "Attacking")
---     local IsChaser = CollectionService:HasTag(Character, "Chasers")
---     if not IsAttacking and IsChaser and not IsSliding then
+--     local IsTagger = CollectionService:HasTag(Character, "Taggers")
+--     if not IsAttacking and IsTagger and not IsSliding then
 
---         local ChaserObject = ChaserComponent:FromInstance(Character)
---         if ChaserObject then
+--         local TaggerObject = TaggerComponent:FromInstance(Character)
+--         if TaggerObject then
 --             StateManagerService:UpdateState(Character, "Attacking", 1)
 --             AnimationService:PlayAnimation(Humanoid, "Slap", {Priority = Enum.AnimationPriority.Action2, Speed = 2})
 --             task.wait(.25)
 --             --Character:SetAttribute("Swinging", true)
---             ChaserObject:ToggleHitDetection(true)
+--             TaggerObject:ToggleHitDetection(true)
 --             Util:PlaySoundInPart(SFX.swipe, HRP)
 --             task.wait(.5)
 --             --Character:SetAttribute("Swinging", false)
---             ChaserObject:ToggleHitDetection(false)
+--             TaggerObject:ToggleHitDetection(false)
 --         end
 --     end
 

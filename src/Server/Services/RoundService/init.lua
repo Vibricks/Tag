@@ -8,11 +8,12 @@ local Signal = require(ReplicatedStorage.Packages.Signal)
 local Trove = require(ReplicatedStorage.Packages.Trove)
 
 local Util = require(ReplicatedStorage.Shared.Util)
+local RoundUtil = require(script.RoundUtil)
 
 local GameInfo = ReplicatedStorage.GameInfo
 
 local INTERMISSION_DURATION = 5
-local REQUIRED_PLAYERS = 1--RunService:IsStudio() and 1 or 2
+local REQUIRED_PLAYERS = RunService:IsStudio() and 1 or 2
 
 local StartGameSignal = Signal.new()
 
@@ -20,15 +21,20 @@ local RoundService = Knit.CreateService({
 	Name = "RoundService",
 	Client = {
 		Test = Knit.CreateSignal(),
+		GameOver = Knit.CreateSignal(),
+		ReflectOnUI = Knit.CreateSignal(),
 	},
 })
 
 RoundService.Signals = {
 	ProcessTagHit = Signal.new(),
+	TimeUpSignal = Signal.new(),
 	PlayerDied = Signal.new(),
+	EndTimer = Signal.new()
 }
 
 local TeamService
+local InputService
 RoundService.CurrentTrove = nil
 
 local GamemodeCache = {}
@@ -50,24 +56,51 @@ RoundService.Signals.ProcessTagHit:Connect(function(Attacker, Victim)
 	end
 end)
 
+function RoundService.EnableRoundUI()
+	RoundService.Client.ReflectOnUI:FireExcept(function(plr)
+		return table.find(RoundService.Participants, plr) and true
+	end, "EnableRoundUI")
+end
+
 function enoughPlayers()
 	return #Players:GetPlayers() >= REQUIRED_PLAYERS
 end
 
 function NotEnoughPlrsOnDeduction()
-	return Promise.race({
-		Promise.fromEvent(Players.PlayerRemoving, function()
-			return #Players:GetPlayers() - 1 < REQUIRED_PLAYERS
-		end),
-		Promise.fromEvent(RoundService.Signals.PlayerDied, function(Player)
-			task.wait(2)
+	local function EvaluateDeduction(Player, OldCharacter) --! Ends the game if the player was needed
+		--*Remove them from the games participants
+		local index = table.find(RoundService.Participants, Player)
+		table.remove(RoundService.Participants, index)
 
-			warn("well since", Player, "died lets remove them from participants")
-			local index = table.find(RoundService.Participants, Player)
-			table.remove(RoundService.Participants, index)
-			return #RoundService.Participants - 1 < REQUIRED_PLAYERS
+		--local Character = Player.Character
+		task.wait(2)
+		local TeamIsEmpty = false
+
+		--*Get which team they were on and remove them
+		local Team = TeamService:GetPlayerTeam(Player)
+		if Team then
+			local TeamName = Team.Name
+			TeamService.RemovePlayerFromTeam(Player, TeamName)
+			TeamIsEmpty = TeamService:IsTeamEmpty(TeamName)
+		end
+
+
+		--* Let's see if we have enough players
+		local EnoughPlayers = #RoundService.Participants >= REQUIRED_PLAYERS
+
+		if TeamIsEmpty or not EnoughPlayers then 
+			return true
+		end
+		return false
+	end
+	return Promise.race({
+		Promise.fromEvent(Players.PlayerRemoving, function(Player)
+			return EvaluateDeduction(Player)
 		end),
-	}):andThenReturn("Not enough Players")
+		Promise.fromEvent(RoundService.Signals.PlayerDied, function(Player, OldCharacter)
+			return EvaluateDeduction(Player, OldCharacter)
+		end),
+	}):andThenReturn("Not Enough Players")
 end
 
 function IsEnoughPlayersOnJoin()
@@ -86,8 +119,12 @@ function SetupGame()
 	return Promise.race({
 		Promise.new(function(resolve, reject)
 			RoundService.CurrentTrove = Trove.new()
-			GameInfo.ServerMessage.Value = "Setting up the gamemode..."
-			GameInfo.ServerMessage:SetAttribute("Color", Color3.fromRGB(255, 255, 255))
+			RoundService.CurrentTrove:Add(function()
+				for i, v in pairs(RoundService.Participants) do
+					v:SetAttribute("ForceMouseLock", false)
+				end
+			end)
+			RoundUtil.ChangeServerMessage("Setting up the gamemode...")
 			local SelectedGamemode = GameInfo.CurrentGamemode.Value
 			local module = GamemodeCache[SelectedGamemode]
 
@@ -102,9 +139,10 @@ function SetupGame()
 				if Character and Humanoid and Humanoid.Health > 0 then
 					if not plr:GetAttribute("IsAFK") then
 						table.insert(RoundService.Participants, plr)
+						plr:SetAttribute("ForceMouseLock", true)
+
 						RoundService.CurrentTrove:Add(Humanoid.Died:Connect(function()
-							print(plr, "died")
-							RoundService.Signals.PlayerDied:Fire(plr)
+							RoundService.Signals.PlayerDied:Fire(plr, Character)
 						end))
 					end
 				end
@@ -115,10 +153,11 @@ function SetupGame()
 
 			local success, returnedWith = Promise.try(module.SetupGamemode, RoundService.CurrentTrove):await()
 			if success then
+
 				resolve()
 			else
-				GameInfo.ServerMessage:SetAttribute("Color", Color3.fromRGB(200, 51, 51))
-				GameInfo.ServerMessage.Value = "An error occured, Set up failed, restarting game..."
+				RoundUtil.ChangeServerMessage("An error occured, Set up failed, restarting game...", Color3.fromRGB(200, 51, 51))
+
 				warn("Set up failed: ", returnedWith)
 				reject("Set up failed")
 			end
@@ -131,7 +170,6 @@ function SetupGame()
 end
 
 function CleanupGame(...)
-	print(...)
 	workspace.RoundMusic:Stop()
 	if RoundService.CurrentTrove then
 		RoundService.CurrentTrove:Destroy()
@@ -141,13 +179,17 @@ function CleanupGame(...)
 		local Character = plr.Character
 		local Humanoid = Character and Character:FindFirstChild("Humanoid")
 		if plr and Character and Humanoid then
-			warn("teleporting", plr, "back to lobby")
-			Character:PivotTo(workspace.Lobby.SpawnLocation.CFrame * CFrame.new(0, 3, 0))
+			task.defer(function()
+				InputService.Client.CancelClimbing:Fire(plr)
+				task.wait(.25)
+				Character:PivotTo(workspace.Lobby.SpawnLocation.CFrame * CFrame.new(0, 3, 0))
+			end)
+
 		end
 	end
 	RoundService.Participants = {}
-	GameInfo.ServerMessage:SetAttribute("Color", Color3.fromRGB(255, 255, 255))
-	GameInfo.ServerMessage.Value = "Cleaning up..."
+	RoundUtil.ChangeServerMessage("Cleaning up...")
+
 	return Promise.new(function(resolve)
 		--! Clean up and return the next function for the loop to run
 		GameInfo.GameInProgress.Value = false
@@ -161,7 +203,7 @@ end
 function StartGame(...)
 	print(...)
 	return Promise.new(function(resolve, reject)
-		print("Num Ready Players:", #RoundService.Participants)
+		--print("Num Ready Players:", #RoundService.Participants)
 		if #RoundService.Participants >= REQUIRED_PLAYERS then
 			local CurrentGamemode = GameInfo.CurrentGamemode.Value
 			local module = GamemodeCache[CurrentGamemode]
@@ -174,15 +216,35 @@ function StartGame(...)
 		end
 	end)
 		:andThen(function(Duration, module)
-			local race = Promise.race({ GamemodeTimer(Duration), NotEnoughPlrsOnDeduction(), module.WinCondition() }) --* A race to end the game based on who wins first, time running out or not enough players to continue
+			GamemodeTimer(Duration)
+			local race = Promise.race({ NotEnoughPlrsOnDeduction(), module.WinCondition() }) --* A race to end the game based on who wins first, time running out or not enough players to continue
 			return race:andThen(function(...)
+				RoundService.Signals.EndTimer:Fire()
+				warn("race complete")
 				local args = { ... }
 				local raceResult = args[1]
+				local matchResults = args[2] or {}
+				matchResults.WIN_TYPE = module.Config.WIN_TYPE
 				print(raceResult)
-				if raceResult == "WinConditionMet" then
-					GameInfo.ServerMessage.Value = "No more runners remain!"
-					Promise.delay(2):await()
+				if raceResult == "Not Enough Players" then
+					print(#RoundService.Participants)
+					if #RoundService.Participants >= 1 then
+						local Team = TeamService:GetPlayerTeam(RoundService.Participants[1])
+						matchResults.Winner = Team.Name
+						matchResults.MVP = module.GetMVP(Team.Name)
+						matchResults.TeamColor = Team.Color
+					end
 				end
+				if matchResults.MVP then 
+					local ThumbnailType = Enum.ThumbnailType.HeadShot
+					local ThumbnailSize = Enum.ThumbnailSize.Size352x352
+					matchResults.Thumbnail =  game.Players:GetUserThumbnailAsync(matchResults.MVP.UserId,ThumbnailType, ThumbnailSize) 
+					warn("MVP = ", matchResults.MVP.Name .. "!!!")
+				end
+				task.wait(3)
+				RoundService.Client.GameOver:FireFilter(function(plr)
+					return table.find(RoundService.Participants, plr) and true
+				end, matchResults)
 			end):andThenReturn(CleanupGame)
 		end)
 		:catch(function(err)
@@ -195,19 +257,22 @@ function StartGame(...)
 end
 
 function GamemodeTimer(Duration)
-	return Promise.new(function(resolve)
-		GameInfo.ServerMessage:SetAttribute("Color", Color3.fromRGB(255, 172, 28))
-		GameInfo.ServerMessage.Value = "Time Remaining: " .. Duration
-
+	task.defer(function()
+		RoundUtil.ChangeServerMessage("Time Remaining: " .. Duration, Color3.fromRGB(255, 172, 28))
+		local TimerCanceled = false
+		RoundService.Signals.EndTimer:Connect(function()
+			TimerCanceled = true
+		end)
 		for i = Duration, 0, -1 do
+			if TimerCanceled then return end
 			GameInfo.TimeRemaining.Value = i
-			GameInfo.ServerMessage.Value = "Time Remaining: " .. i
+			RoundUtil.ChangeServerMessage("Time Remaining: " .. i, Color3.fromRGB(255, 172, 28))
+	
 			task.wait(1)
 		end
-		GameInfo.ServerMessage:SetAttribute("Color", Color3.fromRGB(255, 255, 255))
-		GameInfo.ServerMessage.Value = "Time is up!"
-		task.wait(2)
-		resolve("Time is up!")
+		if TimerCanceled then warn("Timer Canceled") end
+		RoundUtil.ChangeServerMessage("Time is up!")
+		RoundService.Signals.TimeUpSignal:Fire() --! The current game mode connects to this and chooses a winner
 	end)
 end
 
@@ -216,12 +281,11 @@ function Intermission()
 		--* Intermission count down
 		Promise.new(function(resolve)
 			GameInfo.Intermission.Value = INTERMISSION_DURATION
-			GameInfo.ServerMessage:SetAttribute("Color", Color3.fromRGB(255, 255, 255))
 
 			for i = INTERMISSION_DURATION, 0, -1 do
 				task.wait(1)
 				GameInfo.Intermission.Value = i
-				GameInfo.ServerMessage.Value = "Intermission: " .. i
+				RoundUtil.ChangeServerMessage("Intermission: " .. i)
 			end
 			--* After the countdown is complete we select a game mode (it's random for now)
 			--TODO implement a voting system
@@ -238,16 +302,15 @@ function Intermission()
 end
 
 function waitForPlayers()
-	GameInfo.ServerMessage.Value = "Waiting for players.."
-	GameInfo.ServerMessage:SetAttribute("Color", Color3.fromRGB(255, 255, 255))
-
+	RoundUtil.ChangeServerMessage("Waiting for players..")
 	return IsEnoughPlayersOnJoin():andThenReturn(Intermission) --* Once theres enough players, start the intermission
 end
 
 function RoundService:KnitStart()
 	task.wait(5)
 	local nextFunction = waitForPlayers
-	GameInfo.ServerMessage.Value = "Please wait..."
+	RoundUtil.ChangeServerMessage("Please wait...")
+
 	while true do
 		nextFunction = nextFunction():expect()
 	end
@@ -260,6 +323,7 @@ function RoundService:KnitInit()
 		end
 	end
 	TeamService = Knit.GetService("TeamService")
+	InputService = Knit.GetService("InputService")
 end
 
 return RoundService
