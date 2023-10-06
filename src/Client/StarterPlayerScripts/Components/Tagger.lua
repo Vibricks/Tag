@@ -17,12 +17,14 @@ local AnimationController
 local InputService 
 local ReplicaInterfaceController
 local StateProfileReplica
+local playerData
 
 Knit.OnStart():andThen(function()
     AnimationController = Knit.GetController("AnimationController")
     InputService = Knit.GetService("InputService")
     ReplicaInterfaceController = Knit.GetController("ReplicaInterfaceController")
     StateProfileReplica = ReplicaInterfaceController:GetReplica("StateProfile")
+    playerData = ReplicaInterfaceController:GetReplica("PlayerProfile").Data
 end)
 
 local OnlyThisClient = {}
@@ -42,6 +44,8 @@ local module = Component.new({
 local SwingDebounce
 function module:Swing()
     local Character = self.Instance
+    if StateReader:IsOnCooldown(Character, "Swinging") then return end --TODO make a client sided cooldown as well
+
     local Humanoid = Character:FindFirstChild("Humanoid")
     local HRP = Character:FindFirstChild("HumanoidRootPart")
     if not HRP or not Humanoid or (Humanoid and Humanoid.Health <= 0) then return end
@@ -91,11 +95,17 @@ function module:Construct()
     local RoundUI = PlayerGui:WaitForChild("RoundUI")
     local Hotbar = RoundUI.Hotbar
 
+
     Hotbar.Slide.LayoutOrder = 1
     Hotbar.Ability.LayoutOrder = 3
     Hotbar.Tag.Visible = true
 
     self.tagButton = Hotbar.Tag
+    self.CurrentWeapon = playerData.Inventory.CurrentWeapon
+
+    if self.CurrentWeapon ~= "None" then
+        
+    end
 end
 
 function module:Start()

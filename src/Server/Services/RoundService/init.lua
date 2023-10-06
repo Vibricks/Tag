@@ -8,14 +8,20 @@ local Signal = require(ReplicatedStorage.Packages.Signal)
 local Trove = require(ReplicatedStorage.Packages.Trove)
 
 local Util = require(ReplicatedStorage.Shared.Util)
-local RoundUtil = require(script.RoundUtil)
+local RoundUtil 
+
+local TeamService
+local InputService
+local StateManagerService
+local PlayerDataService
 
 local GameInfo = ReplicatedStorage.GameInfo
 
-local INTERMISSION_DURATION = 5
+local INTERMISSION_DURATION = RunService:IsStudio() and 5 or 20
 local REQUIRED_PLAYERS = RunService:IsStudio() and 1 or 2
 
 local StartGameSignal = Signal.new()
+
 
 local RoundService = Knit.CreateService({
 	Name = "RoundService",
@@ -33,8 +39,7 @@ RoundService.Signals = {
 	EndTimer = Signal.new()
 }
 
-local TeamService
-local InputService
+
 RoundService.CurrentTrove = nil
 
 local GamemodeCache = {}
@@ -179,12 +184,7 @@ function CleanupGame(...)
 		local Character = plr.Character
 		local Humanoid = Character and Character:FindFirstChild("Humanoid")
 		if plr and Character and Humanoid then
-			task.defer(function()
-				InputService.Client.CancelClimbing:Fire(plr)
-				task.wait(.25)
-				Character:PivotTo(workspace.Lobby.SpawnLocation.CFrame * CFrame.new(0, 3, 0))
-			end)
-
+			RoundUtil:ReturnToLobby(Character)
 		end
 	end
 	RoundService.Participants = {}
@@ -235,6 +235,18 @@ function StartGame(...)
 					local ThumbnailSize = Enum.ThumbnailSize.Size352x352
 					matchResults.Thumbnail =  game.Players:GetUserThumbnailAsync(matchResults.MVP.UserId,ThumbnailType, ThumbnailSize) 
 				end
+				if matchResults.Winner then
+					local WinningTeam = matchResults.Winner
+					local TeamMembers = TeamService.CurrentTeams[WinningTeam].Members 
+					for plr, _ in pairs(TeamMembers) do
+						--* Increasing their wins
+						task.defer(function()
+							local replica = PlayerDataService:GetProfile(plr).Replica
+							replica:SetValue({"Wins"}, replica.Data.Wins+1)
+							plr.leaderstats.Wins.Value += 1
+						end)
+					end
+				end 
 				task.wait(3)
 				RoundService.Client.GameOver:FireFilter(function(plr)
 					return table.find(RoundService.Participants, plr) and true
@@ -318,6 +330,11 @@ function RoundService:KnitInit()
 	end
 	TeamService = Knit.GetService("TeamService")
 	InputService = Knit.GetService("InputService")
+	StateManagerService  = Knit.GetService("StateManagerService")
+	PlayerDataService = Knit.GetService("PlayerDataService")
+	RoundUtil = require(script.RoundUtil)
 end
+
+
 
 return RoundService

@@ -1,4 +1,6 @@
 local States = {
+	["Cooldowns"] = {};
+
 	["Frozen"] = {
 		Bool = false;
 		StateType = "Bool";
@@ -9,13 +11,6 @@ local States = {
 		StateType = "Bool";
 	};
 
-	["CanSprint"] = {
-		StartTime = tick();
-		Duration = 0;
-		StateType = "Timed";
-	};
-
-	
 	["CanAttack"] = {
 		StartTime = tick();
 		Duration = 0;

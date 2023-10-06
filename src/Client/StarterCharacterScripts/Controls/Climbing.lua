@@ -86,10 +86,8 @@ local function isLedge(wallhitResults)
 end
 
 function module.EndLedgeGrab()
-	print("Ending Grab")
 	--local IsLedgeGrabbing = StateReader:IsStateEnabled(Character, "LedgeGrabbing")
 	if currentlyGrabbingLedge then
-		--print("Okay we can end the grab", IsLedgeGrabbing)
 		currentlyGrabbingLedge = false
 		InputService:ToggleLedgeGrab(false)
 
@@ -136,10 +134,9 @@ local function toggleLedgeGrab(bool, ledgeOffset)
 end
 
 local tweenConnection
-local climbAnim = AnimationController:GetAnimation("Scaling", {Looped = true})
-climbAnim.Priority = Enum.AnimationPriority.Action2
 local BodyVelocity
 local BodyGyro
+local climbAnim
 
 function module.EndClimb()
 	if currentlyClimbing then
@@ -186,7 +183,8 @@ local function toggleClimb(bool, wallhitResults)
 			BodyVelocity.Velocity = Vector3.zero
 			BodyVelocity.Parent = HRP
 			game.Debris:AddItem(BodyVelocity, Duration)
-			climbAnim:Play()
+			climbAnim = AnimationController:PlayAnimation("Scaling", {Looped = true, Priority = Enum.AnimationPriority.Action2})
+			--climbAnim:Play()
 			climbAnim:AdjustSpeed(1.75)
 
 			local StartPoint = CFrame.new(wallhitResults.Position + Vector3.new(0, 0, -5))-- + ledgeOffset.LookVector * -1

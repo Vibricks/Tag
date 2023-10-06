@@ -50,10 +50,8 @@ end
 
 function ragdollAdded(humanoid)
 	connections[humanoid] = humanoid.StateChanged:Connect(function(oldState, newState)
-        warn("State changed!")
 		if hasRagdollOwnership(humanoid) then
 			if RAGDOLL_STATES[newState] then
-                warn("Its a ragdoll state!")
 				setRagdollEnabled(humanoid, true)
 			else
 				setRagdollEnabled(humanoid, false)

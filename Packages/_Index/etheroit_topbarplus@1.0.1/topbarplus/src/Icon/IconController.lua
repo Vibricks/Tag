@@ -1109,7 +1109,6 @@ coroutine.wrap(function()
 				-- Required attrbute for using TopbarPlus
 				-- This is not printed within stuido and to the game owner to prevent mixing with debug prints
 				local gameName = placeInfo.Name
-				print(("\n\n\n⚽ %s uses TopbarPlus %s\n🍍 TopbarPlus was developed by ForeverHD and the Nanoblox Team\n🚀 You can learn more and take a free copy by searching for 'TopbarPlus' on the DevForum\n\n"):format(gameName, version))
 			end
 		end
 	end

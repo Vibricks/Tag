@@ -14,7 +14,7 @@ Knit.OnStart():andThen(function()
 end)
 local module = {}
 
-function module:RetrieveState(Character, StateName)
+function module:_GetReplica(Character)
 	local Replica
 	--* Grabbing the replica based on server or client
 	if RunService:IsServer() then
@@ -24,6 +24,12 @@ function module:RetrieveState(Character, StateName)
 	else
 		Replica = ReplicaInterfaceController:GetReplica("StateProfile")
 	end
+	return Replica
+end
+
+function module:RetrieveState(Character, StateName)
+	local Replica = self:_GetReplica(Character)
+
 	--* Returning the state
 	if Replica.Data[StateName] then
 		return Replica.Data[StateName]
@@ -51,5 +57,18 @@ function module:IsStateEnabled(Character, StateName)
 		return ToReturn
 	end
 end
+
+function  module:IsOnCooldown(Character, CooldownName)
+	local Replica = self:_GetReplica(Character)
+	local Cooldown = Replica.Data.Cooldowns[CooldownName]
+	
+	if Cooldown then
+		if workspace:GetAttribute("ElaspedTime") - Cooldown.StartTime <= Cooldown.Duration then
+			return true
+		end
+	end
+	return false
+end
+
 
 return module

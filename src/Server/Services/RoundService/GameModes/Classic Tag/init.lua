@@ -4,11 +4,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Promise = require(ReplicatedStorage.Packages.Promise)
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
+local StateReader = require(ReplicatedStorage.Shared.StateReader)
+local Util = require(ReplicatedStorage.Shared.Util)
 
 local RoundService = Knit.GetService("RoundService") --* This is really only needed so we can access the current trove
 local ServerStorage = game:GetService("ServerStorage")
+local SoundService = game:GetService("SoundService")
 local TeamService = Knit.GetService("TeamService")
 local InputService = Knit.GetService("InputService")
+local StateManagerService = Knit.GetService("StateManagerService")
+local PlayerDataService = Knit.GetService("PlayerDataService")
+
 
 local RoundUtil = require(script.Parent.Parent.RoundUtil)
 local module = {}
@@ -35,13 +41,15 @@ function module.SetupGamemode()
 	--* Divide the ready players into runners and Taggers and assign the teams
 	local Participants = RoundService.Participants
 
+	local totalPlrs = #Participants
+	local TaggerPercentage = 20 --*20% of the server will be taggers
+	local totalTaggers = math.ceil(totalPlrs * TaggerPercentage / 100)
 	for i = 1, #Participants do
 		local plr = Participants[i]
 		local Character = plr.Character
 
 		local SelectedTeam
-		--TODO make the ammount of taggers scale with the server size
-		if i == 1 then
+		if i <= totalTaggers then
 			SelectedTeam = "Taggers"
 		else
 			SelectedTeam = "Runners"
@@ -78,15 +86,57 @@ function module.SetupGamemode()
 	task.wait(2)
 end
 
+
+function Knockback(Attacker, Victim, KnockbackData)--TODO move this to its own module or inside util
+	local AttackerHRP = Attacker:FindFirstChild("HumanoidRootPart")
+	local VictimHRP = Victim:FindFirstChild("HumanoidRootPart")
+	if not VictimHRP or not AttackerHRP then return end
+	for i, v in pairs(VictimHRP:GetChildren()) do
+		if v:IsA("BodyVelocity") then
+			v:Destroy()
+		end
+	end
+	VictimHRP.Velocity = Vector3.new()
+	local dir = (VictimHRP.Position - AttackerHRP.Position).Unit
+	local Speed = KnockbackData and KnockbackData.Speed or 45
+	local UpVector = KnockbackData and KnockbackData.UpVector or 0.4
+
+	local BP = Instance.new("BodyVelocity")
+	BP.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+	BP.Velocity = (dir + Vector3.new(0, UpVector, 0)).Unit * Speed
+	BP.Parent = VictimHRP
+	game.Debris:AddItem(BP, KnockbackData.LifeTime or 0.1)
+end
+
 function module.ProcessTagHit(Attacker, Victim)
 	local AttackerPlr = game.Players:GetPlayerFromCharacter(Attacker)
+	local VictimPlr = game.Players:GetPlayerFromCharacter(Victim)
+	local AttackerRagdolled = StateReader:IsStateEnabled(Attacker, "Ragdolled")
+	local VictimRagdolled = StateReader:IsStateEnabled(Victim, "Ragdolled")
+	if AttackerRagdolled or VictimRagdolled then return end
 	if CollectionService:HasTag(Attacker, "Taggers") then
-		RoundService.Client.ReflectOnUI:FireAll("TagLog", {Attacker.Name, Victim.Name})
-		--warn("Tagging", Victim.Name)
 		local VictimHum = Victim.Humanoid
-		VictimHum:TakeDamage(VictimHum.MaxHealth)
+		local VictimHRP = Victim.HumanoidRootPart
 
+		if VictimHRP then 
+			Util:PlaySoundInPart(SoundService.SFX.SwipeHit, VictimHRP)
+			--Knockback(Attacker, Victim, {})
+		end
+		
+		StateManagerService:UpdateState(Victim, "Ragdolled", 10)
+		
+		RoundService.Client.ReflectOnUI:FireAll("TagLog", {Attacker.Name, Victim.Name})
+		RoundService.Client.ReflectOnUI:Fire(VictimPlr, "YouWereTagged")
+		task.delay(1, function()
+			RoundUtil:ReturnToLobby(Victim)
+		end)
+
+		--* Increasing their tags
+		local replica = PlayerDataService:GetProfile(AttackerPlr).Replica
+		replica:SetValue({"Tags"}, replica.Data.Tags+1)
 		module.Logger[AttackerPlr].Tags = module.Logger[AttackerPlr].Tags + 1
+		AttackerPlr.leaderstats.Tags.Value += 1
+
 		CharacterTaggedSignal:Fire(Victim)
 	end
 end
@@ -161,7 +211,6 @@ function module.GetMVP(TeamName)
 		end
 	end
 	return MVP
-
 end
 
 return module

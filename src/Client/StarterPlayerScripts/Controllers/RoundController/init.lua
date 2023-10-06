@@ -51,7 +51,7 @@ function RoundController:KnitStart()
     RoundService.GameOver:Connect(function(MatchResults)
         RoundUI.Enabled = false
         LobbyUI.Enabled = true
-        warn(MatchResults)
+        --warn(MatchResults)
         if MatchResults and MatchResults.Winner then
             SFX.GameOver:Play()
 
@@ -98,6 +98,21 @@ function RoundController:KnitStart()
 
             local SystemMessage = "<font color='rgb(" .. r .. "," .. g .. "," .. b .. ")'>" .. RealMessage .. "</font>"
             systemChannel:DisplaySystemMessage(SystemMessage)
+        elseif Request == "YouWereTagged" then
+            local taggedUI = PlayerGui.YouWereTagged:Clone()
+            taggedUI.Enabled = true
+            taggedUI.Message.Position = UDim2.fromScale(0.5,-1.5)
+            taggedUI.Message2.Position = UDim2.fromScale(0.5,-1.5)
+            --UDim2.fromScale(0.5,0.391)
+            taggedUI.Parent = PlayerGui
+            SFX.YouDied:Play()
+
+            taggedUI.Message:TweenPosition(UDim2.fromScale(0.5,0.391), "Out", "Quad", .4, true)
+            taggedUI.Message2:TweenPosition(UDim2.fromScale(0.5,0.527), "Out", "Quad", .4, true)
+            task.wait(1.5)
+            taggedUI.Message:TweenPosition(UDim2.fromScale(0.5,-1.5), "Out", "Quad", .4, true)
+            taggedUI.Message2:TweenPosition(UDim2.fromScale(0.5,-1.5), "Out", "Quad", .4, true)
+            game.Debris:AddItem(taggedUI, 1.5)
         end
     end)
 end

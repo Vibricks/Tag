@@ -5,6 +5,7 @@ local SoundService = game:GetService("SoundService")
 local RunService = game:GetService("RunService")
 
 local Util = require(ReplicatedStorage.Shared.Util)
+local StateReader = require(ReplicatedStorage.Shared.StateReader)
 local Knit = require(ReplicatedStorage.Packages.Knit)
 --local TaggerComponent = require(ServerScriptService.Components.Tagger)
 
@@ -59,6 +60,8 @@ function InputService.Client:ToggleSlide(Player, Bool, ExtraData)
 
     local function EndSlide()
         if not Character:GetAttribute("Sliding") then return end
+        --StateManagerService:SetCooldown(Character, "Sliding", 1)
+
         HRP.CanCollide = true
         Character:SetAttribute("Sliding", false)
         Character:SetAttribute("PauseSprint", false)
@@ -88,13 +91,14 @@ function InputService.Client:ToggleSlide(Player, Bool, ExtraData)
         if ExtraData and ExtraData.CancelType == "Jump" then
 
         end
-        task.wait(1)
-        Character:SetAttribute("SlideCooldown", false)
+        --task.wait(1)
+        --Character:SetAttribute("SlideCooldown", false)
     end
 
     local SlideLifeTime = 1
-    if Bool == true and not IsSliding and IsSprinting and not Character:GetAttribute("SlideCooldown") then
-        Character:SetAttribute("SlideCooldown", true)
+    if Bool == true and not IsSliding and IsSprinting and not StateReader:IsOnCooldown(Character, "Sliding") then
+        StateManagerService:SetCooldown(Character, "Sliding", 3.5)
+
         Character:SetAttribute("CanCancelSlide", false)
         Character:SetAttribute("PauseSprint", true)
 
@@ -191,6 +195,8 @@ function InputService.Client:RegisterSwing(Player)
     local CanAttack = StateManagerService:IsStateEnabled(Character, "CanAttack")
     local IsTagger = CollectionService:HasTag(Character, "Taggers")
     local GameInProgress = ReplicatedStorage.GameInfo.GameInProgress.Value
+    StateManagerService:SetCooldown(Character, "Swinging", .5)
+
     if not IsAttacking and IsTagger and not IsSliding and GameInProgress and not LedgeGrabbing and CanAttack then
         --Util:PlaySoundAtPosition(SFX.swipe, HRP)
         StateManagerService:UpdateState(Character, "Attacking", 0.75)
@@ -205,10 +211,13 @@ function InputService.Client:Vault(Player)
     if not Character or not Humanoid then return end
     local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
     if IsSprinting then
+        StateManagerService:ChangeSpeed(Character, 5, 0.4, 2, {DisableJump = true})
         StateManagerService:UpdateState(Character, "Vaulting", 0.75)
         task.wait(0.75)
-        local Speed = StateManagerService.Defaults.WalkSpeed + StateManagerService.Defaults.SPRINT_SPEED_INCREASE + 30
-        StateManagerService:ChangeSpeed(Character, Speed, .35, 2)
+        if StateManagerService:IsStateEnabled(Character, "Sprinting") then
+            local Speed = StateManagerService.Defaults.WalkSpeed + StateManagerService.Defaults.SPRINT_SPEED_INCREASE + 30
+            StateManagerService:ChangeSpeed(Character, Speed, .35, 2)
+        end
     end
 end
 

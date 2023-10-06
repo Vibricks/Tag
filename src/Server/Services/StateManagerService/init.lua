@@ -104,9 +104,33 @@ function module:RetrieveState(Character, StateName)
 	return StateReader:RetrieveState(Character, StateName)
 end
 
-function module:ChangeSpeed(Character,Speed,Duration, Priority, DisableJump, DisableAutoRotate)
-	local Humanoid = Character:FindFirstChild("Humanoid")
+function module:SetCooldown(Character, CooldownName, Duration)
+	local replica = module.CharacterProfiles[Character].Replica
+	if not replica.Data.Cooldowns[CooldownName] then
+		replica:SetValue({"Cooldowns", CooldownName}, {})
+	end
+	replica:SetValues({"Cooldowns", CooldownName}, {
+		Duration = Duration,
+	})
+	--!IMPORTANT, we set the start time AFTER because it serves as a listner for the client to get the updated values
+	replica:SetValue({"Cooldowns", CooldownName, "StartTime"}, workspace:GetAttribute("ElaspedTime"))
+end
 
+function  module:IsOnCooldown(Character, CooldownName)
+	local replica = module.CharacterProfiles[Character].Replica
+	local Cooldown = replica.Data.Cooldowns[CooldownName]
+	if Cooldown then
+		if workspace:GetAttribute("TimeElapsed") - Cooldown.StartTime >= Cooldown.Duration then
+			return true
+		end
+	end
+	return false
+end
+
+function module:ChangeSpeed(Character,Speed,Duration, Priority, Disables)
+	local Humanoid = Character:FindFirstChild("Humanoid")
+	local DisableJump = Disables and Disables.DisableJump
+	local DisableAutoRotate = Disables and Disables.DisableAutoRotate
 	self:UpdateState(Character, "Speed", Duration)
 
 	local SpeedData = self:RetrieveState(Character,"Speed")

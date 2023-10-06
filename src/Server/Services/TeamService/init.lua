@@ -77,7 +77,6 @@ function TeamService:GetPlayerTeam(Player)
     for _, Team in pairs(TeamService.CurrentTeams) do
         local TeamMembers = Team.Members
         for member, _ in pairs(TeamMembers) do
-            warn("Test", Player)
             if member.Name == Player.Name then
                 warn(Player.Name, "Is Member of Team", Team.Name)
 
@@ -96,7 +95,6 @@ function TeamService:IsTeamEmpty(TeamName)
         totalMembers += 1
     end
     if totalMembers <= 0 then
-        warn("Team is empty", totalMembers)
         return true
     end
     return false

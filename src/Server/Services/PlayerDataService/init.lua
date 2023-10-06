@@ -14,6 +14,7 @@ local profileCache = {} -- [player] = {Profile = profile, Replica = replica}
 
 local IS_STUDIO = game:GetService("RunService"):IsStudio()
 local FORCE_USER_ID = 0 --// in case you want to force load somebody else's data
+local DATASTORE_VERSION = 1
 
 local defaultPlayerData = {
     Wins = 0,
@@ -26,6 +27,7 @@ local defaultPlayerData = {
 	},
 
     Inventory = {
+		CurrentWeapon = "None",
         TagWeapons = {}
     },
 
@@ -36,7 +38,7 @@ local defaultPlayerData = {
 }
 
 local gameProfileStore = ProfileService.GetProfileStore(
-	"PlayerData1",
+	"PlayerData"..DATASTORE_VERSION,
 	defaultPlayerData
 )
 
@@ -58,6 +60,7 @@ local function connectLeaderstats(ProfileStore)
     Tags.Parent = leaderstats
 
 	leaderstats.Parent = ProfileStore._player
+
 end
 
 local function playerAdded(player)
@@ -127,7 +130,7 @@ end
 
 
 function module:GetProfile(player, disableYield, timeout)
-    return Promise.new(function(resolve, reject)
+	local success, Data = Promise.new(function(resolve, reject)
         if not player then
             reject(nil, warn(string.format("PlayerDataService:GetProfile expected Player, got %s\n%s", tostring(player), debug.traceback())))
         end
@@ -147,9 +150,9 @@ function module:GetProfile(player, disableYield, timeout)
                 t = t + os.clock()
             end
         end
-
         resolve(profileCache[player])
-    end)
+    end):await()
+    return Data
 end
 
 function PlayerProfile:IsActive()
