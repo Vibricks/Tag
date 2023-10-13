@@ -78,7 +78,6 @@ function TeamService:GetPlayerTeam(Player)
         local TeamMembers = Team.Members
         for member, _ in pairs(TeamMembers) do
             if member.Name == Player.Name then
-                warn(Player.Name, "Is Member of Team", Team.Name)
 
                 return Team
             else

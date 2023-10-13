@@ -18,9 +18,11 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local Util = require(ReplicatedStorage.Shared.Util)
 local Component = require(ReplicatedStorage.Packages.Component)
+local StateReader 
 
 local ClimbModule = require(script.Climbing)
 local VaultingModule = require(script.Vaulting)
+local SprintModule = require(script.Sprinting)
 
 local BeginAcceleration = Signal.new()
 
@@ -28,11 +30,17 @@ local RoundService
 local InputService 
 local AnimationController 
 local TaggerComponent
+local ReplicaInterfaceController
+local PlayerProfileReplica
+
 Knit.OnStart():andThen(function()
+    StateReader = require(ReplicatedStorage.Shared.StateReader)
     RoundService = Knit.GetService("RoundService")
     InputService = Knit.GetService("InputService")
     AnimationController = Knit.GetController("AnimationController")
     TaggerComponent =  require(StarterPlayerScripts.Components.Tagger)
+    ReplicaInterfaceController = Knit.GetController("ReplicaInterfaceController")
+    PlayerProfileReplica = ReplicaInterfaceController:GetReplica("PlayerProfile")
     InputService.CancelClimbing:Connect(function()
         ClimbModule.EndClimb()
         ClimbModule.EndLedgeGrab()
@@ -40,98 +48,22 @@ Knit.OnStart():andThen(function()
 end)
 
 local Connections = {}
--- local MovementStates = {
---     Walking = false,
---     Sliding = false,
--- }
--- local CurrentSpeed = 12
--- local MaxSpeed = 28
--- local LastUpdate = os.clock()
--- local Connections = {} 
--- local TopSpeed = false
--- BeginAcceleration:Connect(function()
---     Connections["Accleration"] = RunService.RenderStepped:Connect(function()
---         if MovementStates["Sliding"] then 
---             SprintAnim:Stop()
---             Connections["Accleration"]:Disconnect()
---             Connections["Accleration"] = nil 
---             return
---         end
-
---         if MovementStates["Walking"] and CurrentSpeed < MaxSpeed and os.clock() - LastUpdate >= .5 then
---             CurrentSpeed += 6
---             CurrentSpeed = math.clamp(CurrentSpeed, 12, MaxSpeed)
---             Humanoid.WalkSpeed = CurrentSpeed
---             LastUpdate = os.clock()
---         end
---         if CurrentSpeed >= MaxSpeed then
---             TopSpeed = true
---             local ZoomOut = TweenService:Create(Camera, TweenInfo.new(.4), {FieldOfView = 90})
---             ZoomOut:Play()
---             ZoomOut:Destroy()
---             SoundService.SFX.TopSpeedWoosh:Play()
-
---             warn("Top Speed Reached, Disconnecting")
---             Connections["Accleration"]:Disconnect()
---             Connections["Accleration"] = nil 
---             SprintAnim:Play()
---             SprintAnim:AdjustSpeed(2)
---         end
---     end)
--- end)
 
 
--- Humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
---     if Humanoid.MoveDirection.Magnitude >= 0.01 and not MovementStates["Walking"] and not MovementStates["Sliding"] then -->> you are walking
---         MovementStates["Walking"] = true
---         BeginAcceleration:Fire()
---     elseif Humanoid.MoveDirection.Magnitude <=0 and MovementStates["Walking"] and not MovementStates["Sliding"] then
---         MovementStates["Walking"] = false
---         SprintAnim:Stop()
-
---         Humanoid.WalkSpeed = 8
---         CurrentSpeed = 8
---         if Connections["Accleration"] then
---             Connections["Accleration"]:Disconnect()
---             Connections["Accleration"] = nil
---         end
---         if TopSpeed then
---             local RevertZoom = TweenService:Create(Camera, TweenInfo.new(.4), {FieldOfView = 70})
---             RevertZoom:Play()
---             RevertZoom:Destroy()
---         end
---     end 
--- end)
 
 
 
 function StartSliding(SlideLifeTime)
-	--*  Old Slide loop
-    --~local num = 0
-
-	--~ while math.abs(num - 10) > 0.01 do
-	--~ 	num = Util:Lerp(num, 10, 0.2)
-	--~ 	local rec = num / 10
-	--~ 	HumanoidRootPart.CFrame = HumanoidRootPart.CFrame * CFrame.new(0, 0, -rec)
-	-- ~	RunService.RenderStepped:Wait()
-	-- ~end
-
     Connections["SlidePromise"] = Promise.new(function(resolve, reject, onCancel)
         local elaspedTime = 0
         local StudsRate = .9
         local lifeTime = SlideLifeTime or 0.8
 
         Connections["Slide"] = RunService.RenderStepped:Connect(function(deltaTime)
-            --elaspedTime += deltaTime
             local decelerationFactor = (elaspedTime*StudsRate) 
             local x = (StudsRate - decelerationFactor)
             HumanoidRootPart.CFrame = HumanoidRootPart.CFrame * CFrame.new(0, 0, -x) 
         end)
-
-        -- onCancel(function()
-        --     Connections["Slide"]:Disconnect()
-        --     Connections["Slide"] = nil
-        -- end)
     
         task.wait(lifeTime) 
         resolve()
@@ -152,24 +84,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     if gameProcessedEvent then return end
 
     if input.KeyCode == Enum.KeyCode.LeftShift then
-        InputService:ToggleSprint():andThen(function(Verified)
-            if Verified == true then
-                local SprintAnim = AnimationController:GetAnimation("Sprint")
-                SprintAnim:Play()
-                while Character:GetAttribute("Sprinting") do
-                    if Humanoid.MoveDirection == Vector3.new()then
-                        SprintAnim:Stop()
-                    else
-                       if  SprintAnim.IsPlaying == false and not Character:GetAttribute("PauseSprint") then
-                        SprintAnim:Play()
-                       end 
-                    end
-                    RunService.RenderStepped:Wait()
-                end
-                SprintAnim:Stop()
-
-            end
-        end)
+        SprintModule:BeginSprint(true)
     elseif input.KeyCode == Enum.KeyCode.C then
         if not Character:GetAttribute("Sliding") then
             local VerifySlide = InputService:ToggleSlide(true)
@@ -196,6 +111,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
             game.Debris:AddItem(BV, 0.35)
 
             for i = 1, 10 do
+                
                 BV.Velocity = HumanoidRootPart.CFrame.LookVector * (60 - i*2) + Vector3.new(0,4+i*2,0)
 
                 local origin = HumanoidRootPart.Position
@@ -213,6 +129,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
             end
 
         end
+    elseif input.KeyCode == Enum.KeyCode.E then
+        InputService:UseAbility()
     end
 end)
 
@@ -221,7 +139,8 @@ UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
     if input.KeyCode == Enum.KeyCode.LeftShift then
         --local Sprint = AnimationController:GetAnimation(Humanoid, "Sprint")
         --Sprint:Stop()
-        InputService:ToggleSprint()
+        SprintModule:EndSprint(true)
+
     end
 end)
 

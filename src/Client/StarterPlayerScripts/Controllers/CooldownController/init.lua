@@ -7,8 +7,8 @@ local CooldownController = Knit.CreateController { Name = "CooldownController" }
 local ReplicaInterfaceController
 local StateProfileReplica
 
-local PlayerGui = Knit.Player:WaitForChild("PlayerGui")
-local RoundUI = PlayerGui:WaitForChild("RoundUI")
+local PlayerGui --= Knit.Player:WaitForChild("PlayerGui")
+local RoundUI 
 
 local Character
 
@@ -38,7 +38,6 @@ local CooldownUIFunctions = {
         end) 
     end,
     ["Sliding"] = function(CooldownInfo)
-        warn(table.unpack(CooldownInfo))
         local CooldownShade = RoundUI.Hotbar.Slide.CooldownShade
         TweenCooldownShade(CooldownShade, CooldownInfo.Duration)
         task.delay(CooldownInfo.Duration, function()
@@ -46,7 +45,17 @@ local CooldownUIFunctions = {
                 CooldownShade.Visible = false
             end
         end) 
-    end
+    end,
+    ["Ability"] = function(CooldownInfo)
+        local CooldownShade = RoundUI.Hotbar.Ability.CooldownShade
+        TweenCooldownShade(CooldownShade, CooldownInfo.Duration)
+        task.delay(CooldownInfo.Duration, function()
+            if not StateReader:IsOnCooldown(Character, "Ability") then
+                CooldownShade.Visible = false
+            end
+        end) 
+    end,
+
 }
 
 local function ListenToCooldowns()
@@ -71,8 +80,13 @@ local function ListenToCooldowns()
 end
 
 function CooldownController:KnitStart()
+    PlayerGui = Knit.Player:WaitForChild("PlayerGui")
+    RoundUI = PlayerGui:WaitForChild("RoundUI")
+
     if Knit.Player.Character then ListenToCooldowns() end
     Knit.Player.CharacterAdded:Connect(function(character)
+        PlayerGui = Knit.Player:WaitForChild("PlayerGui")
+        RoundUI = PlayerGui:WaitForChild("RoundUI")
         ListenToCooldowns()
     end)
 end

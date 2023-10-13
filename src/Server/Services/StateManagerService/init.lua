@@ -120,7 +120,7 @@ function  module:IsOnCooldown(Character, CooldownName)
 	local replica = module.CharacterProfiles[Character].Replica
 	local Cooldown = replica.Data.Cooldowns[CooldownName]
 	if Cooldown then
-		if workspace:GetAttribute("TimeElapsed") - Cooldown.StartTime >= Cooldown.Duration then
+		if workspace:GetAttribute("ElaspedTime") - Cooldown.StartTime <= Cooldown.Duration then
 			return true
 		end
 	end

@@ -6,6 +6,7 @@ local SoundService = game:GetService("SoundService")
 local GuiService = game:GetService("GuiService")
 
 local Player = game.Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Head = Character:WaitForChild("Head")
 local Humanoid = Character:WaitForChild("Humanoid")
@@ -23,7 +24,7 @@ local StateReader = require(ReplicatedStorage.Shared.StateReader)
 
 local InputService
 local AnimationController 
-
+local ClimbingBar = PlayerGui:WaitForChild("RoundUI"):WaitForChild("ClimbingBar")
 Knit.OnStart():andThen(function()
 	InputService = Knit.GetService("InputService")
 	AnimationController = Knit.GetController("AnimationController")
@@ -137,8 +138,9 @@ local tweenConnection
 local BodyVelocity
 local BodyGyro
 local climbAnim
+local ClimbDebounce = false
 
-function module.EndClimb()
+function module.EndClimb(Result)
 	if currentlyClimbing then
 		currentlyClimbing = false
 		Humanoid.AutoRotate = true
@@ -149,20 +151,41 @@ function module.EndClimb()
 		if BodyGyro then BodyGyro:Destroy() end
 
 		InputService:ToggleClimb(false)
+
+		if Result == "ClimbTimeOver" then
+			ClimbingBar.Debounce.Visible = true
+			task.wait(2)
+			if not currentlyClimbing then
+				ClimbingBar.Visible = false
+				ClimbingBar.Debounce.Visible = false
+			end
+		else
+			--ClimbDebounce = false
+
+			ClimbingBar.Visible = false
+		end
 	end
 end
 
 
-local ClimbDebounce = false
 local function toggleClimb(bool, wallhitResults)
 	local IsClimbing = StateReader:IsStateEnabled(Character, "Climbing")
 	local IsLedgeGrabbing = StateReader:IsStateEnabled(Character, "LedgeGrabbing")
 	if bool == true and not  IsClimbing and not IsLedgeGrabbing and not ClimbDebounce then
+
 		ClimbDebounce = true
 		local Duration = 1
+		ClimbingBar.Debounce.Visible = false
+		ClimbingBar.Bar.Size = UDim2.fromScale(1,1)
+		ClimbingBar.Visible = true
+
+		ClimbingBar.Bar:TweenSize(UDim2.fromScale(0,1), "Out", "Quad", Duration, true)
+
 		local ClimbingPromise = Promise.new(function(resolve, reject, onCancel)
-			if HRP:FindFirstChild("ClimbGyro") then HRP.ClimbGyro:Destroy() end
-			if HRP:FindFirstChild("ClimbVelocity") then HRP.ClimbGyro:Destroy() end
+
+			if HRP:FindFirstChildOfClass("BodyGyro") then HRP:FindFirstChildOfClass("BodyGyro") :Destroy() end
+			if HRP:FindFirstChildOfClass("BodyVelocity") then HRP:FindFirstChildOfClass("BodyVelocity"):Destroy() end
+
 			InputService:ToggleClimb(true)
 			currentlyClimbing = true
 			local Speed = 30
@@ -190,6 +213,7 @@ local function toggleClimb(bool, wallhitResults)
 			local StartPoint = CFrame.new(wallhitResults.Position + Vector3.new(0, 0, -5))-- + ledgeOffset.LookVector * -1
 
 			climbConnection = RunService.RenderStepped:Connect(function(deltaTime)
+				warn(Humanoid:GetState())
 				Humanoid.AutoRotate = false
 	
 				BodyVelocity.Velocity = StartPoint.UpVector * Speed
@@ -237,14 +261,13 @@ local function toggleClimb(bool, wallhitResults)
 		local ClimbDurationPromise = Promise.new(function(resolve)
 			task.wait(Duration)
 			resolve("ClimbTimeOver")
-		end):finally(function()
-			ClimbDebounce = false
+		end)--:finally(function()
 
-		end)
+		--end)
 
 		local Race = Promise.race({ClimbingPromise, ClimbDurationPromise})
 		Race:andThen(function(Result, ExtraData)
-			module.EndClimb()
+			module.EndClimb(Result)
 			if Result == "NoMoreWall" then
 				local anim = AnimationController:PlayAnimation("LedgeGrab")
 				GetUp()
@@ -293,6 +316,11 @@ UserInputService.InputBegan:Connect(function(input, gp)
 	end
 end)
 
+Humanoid.StateChanged:Connect(function(old, new)
+	if new == Enum.HumanoidStateType.Landed then
+		ClimbDebounce = false
+	end
+end)
 --mobile support
 if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled and not UserInputService.GamepadEnabled and not GuiService:IsTenFootInterface() then
 	local jumpButton = Player.PlayerGui:WaitForChild("TouchGui"):WaitForChild("TouchControlFrame"):WaitForChild("JumpButton")
@@ -301,16 +329,6 @@ if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and no
 	end)
 end
 
--- local mouse = Player:GetMouse()
--- local LastClick = tick()
--- mouse.Button1Up:Connect(function()
--- 	if tick() - LastClick <= .35 then
--- 	--if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled and not UserInputService.GamepadEnabled and not GuiService:IsTenFootInterface() then
--- 		module.detectWall(true)
--- 	--end
--- 	end
--- 	LastClick = tick()
--- end)
 local UserGameSettings = UserSettings():GetService("UserGameSettings")
 UserGameSettings.RotationType = Enum.RotationType.CameraRelative
 

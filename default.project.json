@@ -12,12 +12,17 @@
         }
     },
 
-
-    
     "ServerScriptService": {
         "$path": "src/Server",
         "$ignoreUnknownInstances": true
     },
+
+    "StarterGui": {
+      "UI_Handlers": {
+        "$path": "src/Client/StarterGui",
+        "$ignoreUnknownInstances": true
+      }
+  },
 
     "StarterPlayer": {
       "StarterCharacterScripts": {

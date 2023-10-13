@@ -14,22 +14,31 @@ local profileCache = {} -- [player] = {Profile = profile, Replica = replica}
 
 local IS_STUDIO = game:GetService("RunService"):IsStudio()
 local FORCE_USER_ID = 0 --// in case you want to force load somebody else's data
-local DATASTORE_VERSION = 1
+local DATASTORE_VERSION = 6.9
 
 local defaultPlayerData = {
+	Level = 1,
+	Exp = 0,
+	StatPoints = 0,
     Wins = 0,
+	Cash = 0,
     Tags = 0,
+
 	Settings = {
+		AutoSprint = false,
 		Audio = {
-			Music = true,
+			BackgroundMusic = true,
 			SFX = true,
 		},
 	},
 
     Inventory = {
+		CurrentAbility = "None",
 		CurrentWeapon = "None",
-        TagWeapons = {}
+        TagWeapons = {},
+		Abilities = {}--["Invisibility"] = {Upgrades = 1}},
     },
+
 
     Perks = {
         Tagger = {},
@@ -126,9 +135,6 @@ local function playerRemoved(player)
 end
 
 
-
-
-
 function module:GetProfile(player, disableYield, timeout)
 	local success, Data = Promise.new(function(resolve, reject)
         if not player then
@@ -154,6 +160,7 @@ function module:GetProfile(player, disableYield, timeout)
     end):await()
     return Data
 end
+
 
 function PlayerProfile:IsActive()
 	return profileCache[self._player] ~= nil

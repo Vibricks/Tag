@@ -619,8 +619,7 @@ function module:ToggleAllParticles(obj, bool)
 	end
 end
 
-function module:SetPlayerVisibility(player, visible, transparency)
-	local char = player.Character
+function module:SetCharacterVisibility(char, visible, transparency)
 	if not char then return end
 	
 	--// if you want the char to be transparent but dont specify what level of transparency, assume fully invis
@@ -654,6 +653,12 @@ function module:SetPlayerVisibility(player, visible, transparency)
 			end
 
 			v.Transparency = newTransparency
+		elseif v:IsA("BillboardGui") then
+			if visible then
+				v.Enabled = true
+			else
+				v.Enabled = false
+			end
 		elseif v:IsA("Decal") and v.Name == "face" then
 			if visible then
 				local val = v:FindFirstChild("FaceTexture")
@@ -736,6 +741,13 @@ function module:CoverPartInAttachments(part, attachmentName, visualize)
 	end	
 end
 
+
+function module:CalculateMaxExp(level)
+    local BaseMaxExp = 100
+    local ExpIncrease = 45
+    
+    return BaseMaxExp + (level - 1) * ExpIncrease
+end
 
 
 return module

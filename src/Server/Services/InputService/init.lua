@@ -22,6 +22,7 @@ local InputService = Knit.CreateService {
 local StateManagerService
 local AnimationService
 local RoundService 
+local PlayerDataService
 
 function InputService.Client:ToggleSprint(Player)
 	local Character = Player.Character
@@ -223,32 +224,27 @@ end
 
 
 
--- function InputService.Client:ProcessClick(Player)
---     if ReplicatedStorage.GameInfo.GameInProgress.Value == false then return end
---     local Character = Player.Character
--- 	local Humanoid,HRP = Character:FindFirstChild("Humanoid"),Character:FindFirstChild("HumanoidRootPart")
---     if not Character or not Humanoid then return end
---     local IsSliding = StateManagerService:IsStateEnabled(Character, "Sliding")
---     local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
---     local IsAttacking = StateManagerService:IsStateEnabled(Character, "Attacking")
---     local IsTagger = CollectionService:HasTag(Character, "Taggers")
---     if not IsAttacking and IsTagger and not IsSliding then
+function InputService.Client:UseAbility(Player)
+    local Character = Player.Character
+	local Humanoid,HRP = Character:FindFirstChild("Humanoid"),Character:FindFirstChild("HumanoidRootPart")
+    if not Character or not Humanoid then return end
 
---         local TaggerObject = TaggerComponent:FromInstance(Character)
---         if TaggerObject then
---             StateManagerService:UpdateState(Character, "Attacking", 1)
---             AnimationService:PlayAnimation(Humanoid, "Slap", {Priority = Enum.AnimationPriority.Action2, Speed = 2})
---             task.wait(.25)
---             --Character:SetAttribute("Swinging", true)
---             TaggerObject:ToggleHitDetection(true)
---             Util:PlaySoundInPart(SFX.swipe, HRP)
---             task.wait(.5)
---             --Character:SetAttribute("Swinging", false)
---             TaggerObject:ToggleHitDetection(false)
---         end
---     end
-
--- end
+    local Profile = PlayerDataService:GetProfile(Player)
+    local IsSliding = StateManagerService:IsStateEnabled(Character, "Sliding")
+    local IsAttacking = StateManagerService:IsStateEnabled(Character, "Attacking")
+    local LedgeGrabbing = StateManagerService:IsStateEnabled(Character, "LedgeGrabbing")
+    local IsClimbing = StateManagerService:IsStateEnabled(Character, "Climbing")
+    local IsTagger = CollectionService:HasTag(Character, "Taggers")
+    local GameInProgress = ReplicatedStorage.GameInfo.GameInProgress.Value
+    if not IsClimbing and not IsSliding and not IsAttacking and not LedgeGrabbing and not StateManagerService:IsOnCooldown(Character, "Ability") 
+    and Profile.Replica.Data.Inventory.CurrentAbility ~= "None" then
+        StateManagerService:SetCooldown(Character, "Ability", 15)
+        Util:SetCharacterVisibility(Character, false)
+        Util:PlaySoundInPart(SFX.Poof, HRP)
+        task.wait(5)
+        Util:SetCharacterVisibility(Character, true)
+    end
+end
 
 function InputService:KnitStart()
     
@@ -259,6 +255,7 @@ function InputService:KnitInit()
     StateManagerService = Knit.GetService("StateManagerService")
     AnimationService = Knit.GetService("AnimationService")
     RoundService = Knit.GetService("RoundService")
+    PlayerDataService = Knit.GetService("PlayerDataService")
 end
 
 

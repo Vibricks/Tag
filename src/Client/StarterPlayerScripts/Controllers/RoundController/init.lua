@@ -1,5 +1,6 @@
 task.wait()
 local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local StarterGui = game:GetService("StarterGui")
@@ -22,17 +23,22 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RoundController = Knit.CreateController { Name = "RoundController" }
 
 local RoundService
+local ReplicaInterfaceController 
 
 local SFX = SoundService.SFX
 
 local GameInfo = ReplicatedStorage.GameInfo
 
-local AnnouncementUI = PlayerGui:WaitForChild("AnnouncementUI")
-local RoundUI = PlayerGui:WaitForChild("RoundUI")
-local ResultsUI = PlayerGui:WaitForChild("ResultsUI")
-local LobbyUI = PlayerGui:WaitForChild("LobbyUI")
+local RoundUI 
+local ResultsUI 
+local LobbyUI 
+local AnnouncementUI
+
+local ProfileReplica
 
 function reflectServerMessage()
+    local AnnouncementUI = PlayerGui:WaitForChild("AnnouncementUI")
+
     local Message = GameInfo.ServerMessage.Value
     local Color = GameInfo.ServerMessage:GetAttribute("Color") or Color3.fromRGB(255, 255, 255)
 
@@ -46,9 +52,19 @@ end
 
 
 function RoundController:KnitStart()
+    LobbyUI = PlayerGui:WaitForChild("LobbyUI")
+    RoundUI = PlayerGui:WaitForChild("RoundUI")
+    ResultsUI = PlayerGui:WaitForChild("ResultsUI")
+    ProfileReplica = ReplicaInterfaceController:GetReplica("PlayerProfile")
+
+    
     reflectServerMessage()
     GameInfo.ServerMessage:GetPropertyChangedSignal("Value"):Connect(reflectServerMessage)
     RoundService.GameOver:Connect(function(MatchResults)
+        LobbyUI = PlayerGui:WaitForChild("LobbyUI")
+        RoundUI = PlayerGui:WaitForChild("RoundUI")
+        ResultsUI = PlayerGui:WaitForChild("ResultsUI")
+
         RoundUI.Enabled = false
         LobbyUI.Enabled = true
         --warn(MatchResults)
@@ -82,9 +98,15 @@ function RoundController:KnitStart()
     end)
 
     RoundService.ReflectOnUI:Connect(function(Request, ExtraData)
+        LobbyUI = PlayerGui:WaitForChild("LobbyUI")
+        RoundUI = PlayerGui:WaitForChild("RoundUI")
+        ResultsUI = PlayerGui:WaitForChild("ResultsUI")
+        AnnouncementUI = PlayerGui:WaitForChild("AnnouncementUI")
         if Request == "EnableRoundUI" then
+            game.Lighting.UI_BLUR.Enabled = false
             RoundUI.Enabled = true
             LobbyUI.Enabled = false
+            RoundUI.Hotbar.Ability.TextLabel.Text = ProfileReplica.Data.Inventory.CurrentAbility 
         elseif Request == "TagLog" then
             local TaggerName = ExtraData[1]
             local VictimName = ExtraData[2]
@@ -113,6 +135,45 @@ function RoundController:KnitStart()
             taggedUI.Message:TweenPosition(UDim2.fromScale(0.5,-1.5), "Out", "Quad", .4, true)
             taggedUI.Message2:TweenPosition(UDim2.fromScale(0.5,-1.5), "Out", "Quad", .4, true)
             game.Debris:AddItem(taggedUI, 1.5)
+        elseif Request == "TeamReveal" then
+            local YouAre = ExtraData[1]
+            local TeamName = ExtraData[2]
+            local Description = ExtraData[3]
+            local Color = ExtraData[4]
+            local RevealCountdown = ExtraData[5]
+
+            local Duration = 4
+            for i = 5, 1, -1 do
+                SFX.Count:Play()
+
+                AnnouncementUI.ServerMessage.Text = "Teams will be revealed in "..i.."..."
+                task.wait(1)
+            end
+
+            local TeamRevealFrame = RoundUI.TeamReveal:Clone()
+            game.Debris:AddItem(TeamRevealFrame, Duration+.1)
+
+            TeamRevealFrame.YouAre.Text = string.upper(YouAre)
+            TeamRevealFrame.TeamName.Text = string.upper(TeamName)
+            TeamRevealFrame.Description.Text = Description or "Do stuff idk!"
+
+            TeamRevealFrame.TeamName.TextColor3 = Color
+            TeamRevealFrame.Visible = true
+
+            TeamRevealFrame.Parent = RoundUI
+            SFX.TeamReveal:Play()
+
+            task.wait(2)
+
+            for i, v in pairs(TeamRevealFrame:GetDescendants()) do
+                local Tween 
+                if v:IsA("TextLabel") then
+                    Tween = TweenService:Create(v, TweenInfo.new(Duration-2), {TextTransparency = 1})
+                elseif v:IsA("UIStroke") then
+                    Tween = TweenService:Create(v, TweenInfo.new(Duration-2), {Transparency = 1})
+                end
+                if Tween then Tween:Play() Tween:Destroy() end
+            end
         end
     end)
 end
@@ -120,6 +181,8 @@ end
 
 function RoundController:KnitInit()
 	RoundService = Knit.GetService("RoundService")
+    ReplicaInterfaceController = Knit.GetController("ReplicaInterfaceController")
+
     local RealMessage = "Welcome to Tag!"
 
     local Color = Color3.fromRGB(255, 255, 101)

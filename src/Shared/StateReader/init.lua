@@ -39,6 +39,8 @@ function module:RetrieveState(Character, StateName)
 end
 
 function module:IsStateEnabled(Character, StateName)
+	local Hum = Character:FindFirstChild("Humanoid")
+	if not Character or not Hum or Hum.Health <= 0 then return end
     local State = self:RetrieveState(Character, StateName)
 
 	if State then

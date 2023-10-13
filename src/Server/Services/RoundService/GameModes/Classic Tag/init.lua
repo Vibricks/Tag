@@ -38,6 +38,9 @@ function module.SetupGamemode()
 	TeamService.CreateTeam("Taggers", true)
 	TeamService.CreateTeam("Runners", true)
 
+	TeamService.CurrentTeams["Runners"].Description = "Run away from all taggers until the time runs out!"
+	TeamService.CurrentTeams["Taggers"].Description = "Capture all runners before the time runs out!"
+
 	--* Divide the ready players into runners and Taggers and assign the teams
 	local Participants = RoundService.Participants
 
@@ -47,7 +50,7 @@ function module.SetupGamemode()
 	for i = 1, #Participants do
 		local plr = Participants[i]
 		local Character = plr.Character
-
+		
 		local SelectedTeam
 		if i <= totalTaggers then
 			SelectedTeam = "Taggers"
@@ -55,7 +58,7 @@ function module.SetupGamemode()
 			SelectedTeam = "Runners"
 		end
 
-		TeamService.AssignTeam(plr, SelectedTeam)
+
 		--! Logger is important for keeping track of what happens in during the match
 		module.Logger[plr] = {
 			Team = SelectedTeam,
@@ -77,6 +80,23 @@ function module.SetupGamemode()
 			end)
 		end
 		RoundService.EnableRoundUI()
+
+		
+		--! Team Reveal
+		task.defer(function()
+			local RevealCountdown = 5
+			RoundUtil.ChangeServerMessage("Prepare for teams to be revealed!")
+			local TeamRevealName = SelectedTeam == "Taggers" and "Tagger" or SelectedTeam == "Runners" and "Runner"
+			local Description = TeamService.CurrentTeams[SelectedTeam].Description
+			local Color = TeamService.CurrentTeams[SelectedTeam].Color
+			RoundService.Client.ReflectOnUI:Fire(plr, "TeamReveal", {"You are a", TeamRevealName, Description, Color, RevealCountdown})
+			task.wait(RevealCountdown)
+			TeamService.AssignTeam(plr, SelectedTeam)
+		end)
+
+
+
+
 	end
 
 	RoundService.CurrentTrove:Add(function()
@@ -127,7 +147,10 @@ function module.ProcessTagHit(Attacker, Victim)
 		
 		RoundService.Client.ReflectOnUI:FireAll("TagLog", {Attacker.Name, Victim.Name})
 		RoundService.Client.ReflectOnUI:Fire(VictimPlr, "YouWereTagged")
+
+		--* Removing them from the match
 		task.delay(1, function()
+			VictimPlr:SetAttribute("InGame", false)
 			RoundUtil:ReturnToLobby(Victim)
 		end)
 

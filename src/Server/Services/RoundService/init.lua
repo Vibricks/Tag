@@ -14,6 +14,7 @@ local TeamService
 local InputService
 local StateManagerService
 local PlayerDataService
+local StatService
 
 local GameInfo = ReplicatedStorage.GameInfo
 
@@ -29,6 +30,7 @@ local RoundService = Knit.CreateService({
 		Test = Knit.CreateSignal(),
 		GameOver = Knit.CreateSignal(),
 		ReflectOnUI = Knit.CreateSignal(),
+
 	},
 })
 
@@ -76,6 +78,7 @@ function NotEnoughPlrsOnDeduction()
 		--*Remove them from the games participants
 		local index = table.find(RoundService.Participants, Player)
 		table.remove(RoundService.Participants, index)
+		Player:SetAttribute("InGame", false)
 
 		--local Character = Player.Character
 		task.wait(2)
@@ -109,7 +112,6 @@ function NotEnoughPlrsOnDeduction()
 end
 
 function IsEnoughPlayersOnJoin()
-	--TODO test if this actually works
 	return Promise.race({
 		Promise.fromEvent(Players.PlayerAdded, function()
 			return enoughPlayers()
@@ -120,12 +122,26 @@ function IsEnoughPlayersOnJoin()
 	})
 end
 
+function GetNumNotAFKPlrs()
+	local Num = 0
+	for _, plr in pairs(game.Players:GetChildren()) do
+		if not plr:GetAttribute("IsAFK") then
+			Num += 1
+		end
+	end
+	return Num
+end
+
 function SetupGame()
 	return Promise.race({
 		Promise.new(function(resolve, reject)
+			if GetNumNotAFKPlrs() < REQUIRED_PLAYERS then
+				reject()
+			end
 			RoundService.CurrentTrove = Trove.new()
 			RoundService.CurrentTrove:Add(function()
 				for i, v in pairs(RoundService.Participants) do
+					v :SetAttribute("InGame", false)
 					v:SetAttribute("ForceMouseLock", false)
 				end
 			end)
@@ -145,7 +161,8 @@ function SetupGame()
 					if not plr:GetAttribute("IsAFK") then
 						table.insert(RoundService.Participants, plr)
 						plr:SetAttribute("ForceMouseLock", true)
-
+					
+						plr:SetAttribute("InGame", true)
 						RoundService.CurrentTrove:Add(Humanoid.Died:Connect(function()
 							RoundService.Signals.PlayerDied:Fire(plr, Character)
 						end))
@@ -248,6 +265,13 @@ function StartGame(...)
 					end
 				end 
 				task.wait(3)
+				--task.delay(3, function()
+					--! Participation Rewards
+					for _, plr in pairs(RoundService.Participants) do
+						StatService:IncreaseExp(plr, math.random(20,60))
+						StatService:IncreaseCash(plr, math.random(30,70))
+					end
+				--end)
 				RoundService.Client.GameOver:FireFilter(function(plr)
 					return table.find(RoundService.Participants, plr) and true
 				end, matchResults)
@@ -312,6 +336,17 @@ function waitForPlayers()
 	return IsEnoughPlayersOnJoin():andThenReturn(Intermission) --* Once theres enough players, start the intermission
 end
 
+
+function RoundService.Client:ToggleAFK(plr)
+	plr:SetAttribute("IsAFK", not plr:GetAttribute("IsAFK"))
+end
+
+function RoundService.Client:Spectate(plr, Bool)
+	if Bool == true then
+		
+	end
+end
+
 function RoundService:KnitStart()
 	task.wait(5)
 	local nextFunction = waitForPlayers
@@ -333,6 +368,7 @@ function RoundService:KnitInit()
 	StateManagerService  = Knit.GetService("StateManagerService")
 	PlayerDataService = Knit.GetService("PlayerDataService")
 	RoundUtil = require(script.RoundUtil)
+	StatService = Knit.GetService("StatService")
 end
 
 
