@@ -320,13 +320,13 @@ Humanoid.StateChanged:Connect(function(old, new)
 		ClimbDebounce = false
 	end
 end)
---mobile support
-if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled and not UserInputService.GamepadEnabled and not GuiService:IsTenFootInterface() then
-	local jumpButton = Player.PlayerGui:WaitForChild("TouchGui"):WaitForChild("TouchControlFrame"):WaitForChild("JumpButton")
-	jumpButton.Activated:Connect(function()
-		module.detectWall(true)
-	end)
-end
+-- --mobile support
+-- if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled and not UserInputService.GamepadEnabled and not GuiService:IsTenFootInterface() then
+-- 	local jumpButton = Player.PlayerGui:WaitForChild("TouchGui"):WaitForChild("TouchControlFrame"):WaitForChild("JumpButton")
+-- 	jumpButton.Activated:Connect(function()
+-- 		module.detectWall(true)
+-- 	end)
+-- end
 
 local UserGameSettings = UserSettings():GetService("UserGameSettings")
 UserGameSettings.RotationType = Enum.RotationType.CameraRelative
