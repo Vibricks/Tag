@@ -113,8 +113,9 @@ RunService.RenderStepped:Connect(function(deltaTime)
         end
         RunService.RenderStepped:Wait()
     else
-        SprintAnim:Stop()
-        warn("Stopping anim")
+        if SprintAnim.IsPlaying then
+          SprintAnim:Stop()
+        end
     end
 end)
 
