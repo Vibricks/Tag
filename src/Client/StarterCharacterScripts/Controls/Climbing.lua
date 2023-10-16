@@ -154,7 +154,7 @@ function module.EndClimb(Result)
 
 		if Result == "ClimbTimeOver" then
 			ClimbingBar.Debounce.Visible = true
-			task.wait(2)
+			task.wait(.5)
 			if not currentlyClimbing then
 				ClimbingBar.Visible = false
 				ClimbingBar.Debounce.Visible = false
@@ -213,7 +213,6 @@ local function toggleClimb(bool, wallhitResults)
 			local StartPoint = CFrame.new(wallhitResults.Position + Vector3.new(0, 0, -5))-- + ledgeOffset.LookVector * -1
 
 			climbConnection = RunService.RenderStepped:Connect(function(deltaTime)
-				warn(Humanoid:GetState())
 				Humanoid.AutoRotate = false
 	
 				BodyVelocity.Velocity = StartPoint.UpVector * Speed
