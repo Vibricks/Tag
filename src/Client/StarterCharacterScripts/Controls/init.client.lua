@@ -66,7 +66,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
             TaggerObject:Swing()
         end
     elseif input.KeyCode == Enum.KeyCode.Space then
-        ClimbModule:SlideCancel()
+        SlideModule:SlideCancel()
     elseif input.KeyCode == Enum.KeyCode.E then
         InputService:UseAbility()
     end
@@ -82,6 +82,9 @@ end)
 
 
 if UserInputService.TouchEnabled then
+    local RoundUI = PlayerGui:WaitForChild("RoundUI")
+    RoundUI:WaitForChild("Hotbar").Visible = false
+    
     local MobileButtons = PlayerGui:WaitForChild("MobileButtons")
     MobileButtons.Enabled = true
 
