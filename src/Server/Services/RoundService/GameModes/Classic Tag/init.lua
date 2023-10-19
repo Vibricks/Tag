@@ -94,16 +94,13 @@ function module.SetupGamemode()
 			TeamService.AssignTeam(plr, SelectedTeam)
 		end)
 
-
-
-
 	end
 
 	RoundService.CurrentTrove:Add(function()
 		module.Logger = {}
 	end)
 
-	task.wait(2)
+	task.wait(5) --! IMPORTANT: Wait for the reveal to finish
 end
 
 

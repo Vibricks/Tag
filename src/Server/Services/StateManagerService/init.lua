@@ -26,105 +26,137 @@ module.Defaults = {
 local StateProfileClassToken = ReplicaService.NewClassToken("StateProfile")
 
 
-local function CleanUpCharacterData(Character)
-	print(Character.Name)
-	local data = module.CharacterProfiles[Character]
-	if data.Replica then
+function module.CleanUpData(Index)
+	local data = module.CharacterProfiles[Index]
+
+	if module.CharacterProfiles[Index].Replica then
 		data.Replica:Destroy()
 	end
-	for i, v in pairs(module.CharacterProfiles[Character].Connections) do
+
+	for i, v in pairs(module.CharacterProfiles[Index].Connections) do
 		v:Disconnect()
 	end
-
-	module.CharacterProfiles[Character] = nil
+	module.CharacterProfiles[Index] = nil
 end
 
 function module.Initialize(Character)
 	local Player = game.Players:GetPlayerFromCharacter(Character)
 	local Humanoid = Character:WaitForChild("Humanoid")
-	module.CharacterProfiles[Character] = {
+	local Index = Player or Character
+	module.CharacterProfiles[Index] = {
 		States = Util:DeepCopyTable(StatePresets);
 		Connections = {};
 		Replica =  {};
 	}
 	if Player then
-		module.CharacterProfiles[Character].Replica = ReplicaService.NewReplica({
+		module.CharacterProfiles[Index].Replica = ReplicaService.NewReplica({
 			ClassToken =  StateProfileClassToken;
 			Tags = {Player = Player};
-			Data = module.CharacterProfiles[Character].States;
+			Data = module.CharacterProfiles[Index].States;
 			Replication = Player;
 		})
 	end
 	
-	--//Here is where we would update certain default states based on player data
-	--local _ = PlayerData and ProfileManager.CreateAbilityGauges (PlayerData, GaugesFolder)
+	--! Here is where we would update certain default states based on player data
+	--~local _ = PlayerData and ProfileManager.CreateAbilityGauges (PlayerData, GaugesFolder)
 	Humanoid.WalkSpeed = module.Defaults.WalkSpeed
 	Humanoid.JumpPower = module.Defaults.JumpPower
 	Humanoid.Died:Connect(function()
-		if module.CharacterProfiles[Character] then
-			CleanUpCharacterData(Character)
+		if module.CharacterProfiles[Index] then
+			module.CleanUpData(Index)
 		end
 	end)
-	--// make sure appearance is loaded before building ragdoll
-	task.defer(function()
-		if not Player:HasAppearanceLoaded() then
-			Player.CharacterAppearanceLoaded:Wait()
-		end
-		if Player.Parent then
-			RagdollManager.BuildRagdoll(Character)
-		end
-	end)
+
+	--! Make sure appearance is loaded before building ragdoll
+	if Player then
+		task.defer(function()
+			if not Player:HasAppearanceLoaded() then
+				Player.CharacterAppearanceLoaded:Wait()
+			end
+			if Player.Parent then
+				RagdollManager.BuildRagdoll(Character)
+			end
+		end)
+	end
 end
 
 function module:IsStateEnabled(Character, StateName)
-	return StateReader:IsStateEnabled(Character, StateName)
+	local Player = game.Players:GetPlayerFromCharacter(Character)
+	local StateEnabled 
+	if Player then
+		StateEnabled = StateReader:IsStateEnabled(Character, StateName)
+	end
+	return StateEnabled
 end
 
 
 
 function module:UpdateState(Character, StateName, NewValue)
+	local Player = game.Players:GetPlayerFromCharacter(Character)
 	local State = self:RetrieveState(Character, StateName)
-	local replica = module.CharacterProfiles[Character].Replica
 	if State then
-		local StateType = State.StateType
-		if StateType == "Timed" then
-			replica:SetValue({StateName, "StartTime"}, tick())
-			replica:SetValue({StateName, "Duration"}, NewValue)
+		if Player then
+			local replica = module.CharacterProfiles[Player].Replica 
 
-			State.Duration = NewValue
-		elseif StateType == "Bool" then
-			replica:SetValue({StateName, "Bool"}, NewValue)
+			local StateType = State.StateType
+			if StateType == "Timed" then
+				replica:SetValue({StateName, "StartTime"}, tick())
+				replica:SetValue({StateName, "Duration"}, NewValue)
+
+				State.Duration = NewValue
+			elseif StateType == "Bool" then
+				replica:SetValue({StateName, "Bool"}, NewValue)
+			end
+		else
+			--? POTENTIAL NPC LOGIC GOES HERE
 		end
 	else
 		warn("State not found")
 	end
 end
 
-function module:RetrieveState(Character, StateName)
-	return StateReader:RetrieveState(Character, StateName)
+function module:RetrieveState(Character: Model, StateName: string)
+	local Player = game.Players:GetPlayerFromCharacter(Character) 
+	local State
+	if Player then
+		State = StateReader:RetrieveState(Player, StateName)
+	else
+		--? POTENTIAL NPC LOGIC GOES HERE
+	end
+	return State
 end
 
 function module:SetCooldown(Character, CooldownName, Duration)
-	local replica = module.CharacterProfiles[Character].Replica
-	if not replica.Data.Cooldowns[CooldownName] then
-		replica:SetValue({"Cooldowns", CooldownName}, {})
+	local Player = game.Players:GetPlayerFromCharacter(Character) 
+	if Player then
+		local replica = module.CharacterProfiles[Player].Replica
+		if not replica.Data.Cooldowns[CooldownName] then
+			replica:SetValue({"Cooldowns", CooldownName}, {})
+		end
+		replica:SetValues({"Cooldowns", CooldownName}, {
+			Duration = Duration,
+		})
+		--! IMPORTANT, we set the start time AFTER because it serves as a listner for the client to get the updated values
+		replica:SetValue({"Cooldowns", CooldownName, "StartTime"}, workspace:GetAttribute("ElaspedTime"))
+	else
+		--? POTENTIAL NPC LOGIC GOES HERE
 	end
-	replica:SetValues({"Cooldowns", CooldownName}, {
-		Duration = Duration,
-	})
-	--!IMPORTANT, we set the start time AFTER because it serves as a listner for the client to get the updated values
-	replica:SetValue({"Cooldowns", CooldownName, "StartTime"}, workspace:GetAttribute("ElaspedTime"))
 end
 
 function  module:IsOnCooldown(Character, CooldownName)
-	local replica = module.CharacterProfiles[Character].Replica
-	local Cooldown = replica.Data.Cooldowns[CooldownName]
-	if Cooldown then
-		if workspace:GetAttribute("ElaspedTime") - Cooldown.StartTime <= Cooldown.Duration then
-			return true
+	local Player = game.Players:GetPlayerFromCharacter(Character) 
+	if Player then
+		local replica = module.CharacterProfiles[Player].Replica
+		local Cooldown = replica.Data.Cooldowns[CooldownName]
+		if Cooldown then
+			if workspace:GetAttribute("ElaspedTime") - Cooldown.StartTime <= Cooldown.Duration then
+				return true
+			end
 		end
+		return false
+	else
+		--? POTENTIAL NPC LOGIC GOES HERE
 	end
-	return false
 end
 
 function module:ChangeSpeed(Character,Speed,Duration, Priority, Disables)
@@ -171,21 +203,7 @@ function module:ChangeSpeed(Character,Speed,Duration, Priority, Disables)
 end
 
 function module:KnitStart()
-	for _, Player in pairs(game.Players:GetChildren()) do
-		if Player and Player.Character then
-			module.Initialize(Player.Character)
-		end
-	end
-	
-	game.Players.PlayerAdded:Connect(function(Player)
-		Player.CharacterAdded:Connect(function(Character)
-			module.Initialize(Character)
-		end)
-	end)
 
-	game.Players.PlayerRemoving:Connect(function(player)
-		CleanUpCharacterData(player.Character)
-	end)
 end
 
 function module:KnitInit()

@@ -56,6 +56,11 @@ local function FindNearbyVault()
 					local Wall = wallhitResults.Instance
 					if Wall.Anchored == true and Wall.CanCollide == true and IsVaultable(Wall) and CanVault then
 						if Hum.FloorMaterial ~= Enum.Material.Air then
+							for i, v in pairs(HRP:GetChildren()) do
+								if v:IsA("BodyVelocity") or v:IsA("BodyGyro") then
+									v:Destroy()
+								end
+							end
 							InputService:Vault()
 							CanVault = false
 							local Vel = Instance.new("BodyVelocity")

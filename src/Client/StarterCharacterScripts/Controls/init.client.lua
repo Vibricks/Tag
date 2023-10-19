@@ -34,6 +34,7 @@ local AnimationController
 local TaggerComponent
 local ReplicaInterfaceController
 local PlayerProfileReplica
+local AbilityService
 
 Knit.OnStart():andThen(function()
     StateReader = require(ReplicatedStorage.Shared.StateReader)
@@ -43,6 +44,7 @@ Knit.OnStart():andThen(function()
     TaggerComponent =  require(StarterPlayerScripts.Components.Tagger)
     ReplicaInterfaceController = Knit.GetController("ReplicaInterfaceController")
     PlayerProfileReplica = ReplicaInterfaceController:GetReplica("PlayerProfile")
+    AbilityService = Knit.GetService("AbilityService")
     InputService.CancelClimbing:Connect(function()
         ClimbModule.EndClimb()
         ClimbModule.EndLedgeGrab()
@@ -56,25 +58,26 @@ local Connections = {}
 UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     if gameProcessedEvent then return end
 
-    if input.KeyCode == Enum.KeyCode.LeftShift then
+    if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.ButtonL3 then
         SprintModule:BeginSprint(true)
-    elseif input.KeyCode == Enum.KeyCode.C then
+    elseif input.KeyCode == Enum.KeyCode.C or input.KeyCode == Enum.KeyCode.ButtonB then
         SlideModule:BeginSlide()
-    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+    elseif input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
         local TaggerObject = TaggerComponent:FromInstance(Character)
         if TaggerObject then
             TaggerObject:Swing()
         end
-    elseif input.KeyCode == Enum.KeyCode.Space then
+    elseif input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.ButtonR1 then
         SlideModule:SlideCancel()
-    elseif input.KeyCode == Enum.KeyCode.E then
-        InputService:UseAbility()
+    elseif input.KeyCode == Enum.KeyCode.E or input.KeyCode == Enum.KeyCode.ButtonY then
+        AbilityService:UseAbility()
     end
 end)
 
+
 UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
     if gameProcessedEvent then return end
-    if input.KeyCode == Enum.KeyCode.LeftShift then
+    if input.KeyCode == Enum.KeyCode.LeftShift  or input.KeyCode == Enum.KeyCode.ButtonL3 then
         SprintModule:EndSprint(true)
     end
 end)

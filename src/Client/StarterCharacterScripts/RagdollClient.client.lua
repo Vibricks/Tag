@@ -17,6 +17,7 @@ Knit.OnStart():andThen(function()
 	Replica:ListenToChange({"Ragdolled", "StartTime"}, function(OldValue, NewValue)
 		local currentCharacter = Player.Character
 		if not currentCharacter then return end
+		--currentCharacter.HumanoidRootPart.Velocity = Vector3.zero
 		while StateReader:IsStateEnabled(currentCharacter, "Ragdolled") do
 			if currentCharacter.Humanoid:GetState() ~= Enum.HumanoidStateType.Physics then
 				currentCharacter.Humanoid:ChangeState(Enum.HumanoidStateType.Physics)

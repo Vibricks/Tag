@@ -13,6 +13,8 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 local LobbyUI = PlayerGui:WaitForChild("LobbyUI")
 local MainButtons = LobbyUI:WaitForChild("Buttons")
 
+local SpectateUI = PlayerGui:WaitForChild("SpectateUI")
+
 local SFX = SoundService.SFX
 
 
@@ -84,9 +86,9 @@ function ReflectExp()
     ExpBar.Bar:TweenSize(UDim2.fromScale(Current/Max, 1), "Out", "Quad", .4, true)
 end
 
-function ReflectCash()
-    local Cash = PlayerProfileReplica.Data.Cash
-    PlayerGui:WaitForChild("LobbyUI").Cash.TextLabel.Text = "$ "..Cash
+function ReflectCoins()
+    local Coins = PlayerProfileReplica.Data.Coins
+    PlayerGui:WaitForChild("LobbyUI").Coins.TextLabel.Text = "$ "..Coins
 end
 
 function ReflectSp()
@@ -96,9 +98,11 @@ end
 
 ReflectExp()
 ReflectLevel()
-ReflectCash()
+ReflectCoins()
 ReflectSp()
 
 PlayerProfileReplica:ListenToChange({"Level"}, ReflectLevel)
 PlayerProfileReplica:ListenToChange({"Exp"}, ReflectExp)
-PlayerProfileReplica:ListenToChange({"Cash"}, ReflectCash)
+PlayerProfileReplica:ListenToChange({"Coins"}, ReflectCoins)
+
+

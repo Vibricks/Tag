@@ -269,7 +269,7 @@ function StartGame(...)
 					--! Participation Rewards
 					for _, plr in pairs(RoundService.Participants) do
 						StatService:IncreaseExp(plr, math.random(20,60))
-						StatService:IncreaseCash(plr, math.random(30,70))
+						StatService:IncreaseCoins(plr, math.random(30,70))
 					end
 				--end)
 				RoundService.Client.GameOver:FireFilter(function(plr)

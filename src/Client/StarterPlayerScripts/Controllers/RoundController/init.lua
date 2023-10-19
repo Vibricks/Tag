@@ -103,10 +103,12 @@ function RoundController:KnitStart()
         ResultsUI = PlayerGui:WaitForChild("ResultsUI")
         AnnouncementUI = PlayerGui:WaitForChild("AnnouncementUI")
         if Request == "EnableRoundUI" then
-            game.Lighting.UI_BLUR.Enabled = false
-            RoundUI.Enabled = true
-            LobbyUI.Enabled = false
-            RoundUI.Hotbar.Ability.TextLabel.Text = ProfileReplica.Data.Inventory.CurrentAbility 
+            if not Knit.Player:GetAttribute("IsAFK") then
+                game.Lighting.UI_BLUR.Enabled = false
+                RoundUI.Enabled = true
+                LobbyUI.Enabled = false
+                RoundUI.Hotbar.Ability.TextLabel.Text = ProfileReplica.Data.Inventory.CurrentAbility
+            end
         elseif Request == "TagLog" then
             local TaggerName = ExtraData[1]
             local VictimName = ExtraData[2]

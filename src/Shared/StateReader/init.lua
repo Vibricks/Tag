@@ -1,3 +1,4 @@
+--! Warning: only use this to read PLAYER states, for NPCS directly use the statemanager
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -14,12 +15,13 @@ Knit.OnStart():andThen(function()
 end)
 local module = {}
 
-function module:_GetReplica(Character)
+function module:_GetReplica(Player: Player)
 	local Replica
 	--* Grabbing the replica based on server or client
 	if RunService:IsServer() then
-		if StateManagerService.CharacterProfiles[Character] then --* If the characters state profile exsits
-			Replica = StateManagerService.CharacterProfiles[Character].Replica --* Grab the replica
+		if StateManagerService.CharacterProfiles[Player] then --* If the characters state profile exsits
+			Replica = StateManagerService.CharacterProfiles[Player].Replica --* Grab the replica
+		else
 		end
 	else
 		Replica = ReplicaInterfaceController:GetReplica("StateProfile")
@@ -27,9 +29,8 @@ function module:_GetReplica(Character)
 	return Replica
 end
 
-function module:RetrieveState(Character, StateName)
-	local Replica = self:_GetReplica(Character)
-
+function module:RetrieveState(Player: Player, StateName: string)
+	local Replica = self:_GetReplica(Player)
 	--* Returning the state
 	if Replica.Data[StateName] then
 		return Replica.Data[StateName]
@@ -38,10 +39,11 @@ function module:RetrieveState(Character, StateName)
 	end
 end
 
-function module:IsStateEnabled(Character, StateName)
+function module:IsStateEnabled(Character: Model, StateName: string)
 	local Hum = Character:FindFirstChild("Humanoid")
 	if not Character or not Hum or Hum.Health <= 0 then return end
-    local State = self:RetrieveState(Character, StateName)
+	local Player = game.Players:GetPlayerFromCharacter(Character)
+    local State = self:RetrieveState(Player, StateName)
 
 	if State then
 		local StateType = State.StateType
@@ -60,8 +62,9 @@ function module:IsStateEnabled(Character, StateName)
 	end
 end
 
-function  module:IsOnCooldown(Character, CooldownName)
-	local Replica = self:_GetReplica(Character)
+function  module:IsOnCooldown(Character: Model, CooldownName: string)
+	local Player = game.Players:GetPlayerFromCharacter(Character)
+	local Replica = self:_GetReplica(Player)
 	local Cooldown = Replica.Data.Cooldowns[CooldownName]
 	
 	if Cooldown then

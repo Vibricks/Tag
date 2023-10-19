@@ -12,15 +12,38 @@ local ShopData = require(ReplicatedStorage.Shared.Metadata.ShopData)
 local SFX = game:GetService("SoundService").SFX
 local module = {}
 local Connections = {}
+local CurrentTab = ShopFrame.Container.WeaponsTab
 
 local frameModuleCache = {}
 
 for i, v in pairs(script:GetChildren()) do
     if v:IsA("ModuleScript") then
         frameModuleCache[v.Name] = require(v)
-        frameModuleCache[v.Name]:Setup()
     end
 end
+
+
+for i, v in pairs(ShopFrame.Container.Buttons:GetChildren()) do
+    local Button = v:FindFirstChild("Button")
+    local Tab = ShopFrame.Container:FindFirstChild(v.Name.."Tab")
+    if Button then
+        Button.MouseButton1Click:Connect(function()
+            SFX.Click:Play()
+            if Tab then
+                if CurrentTab == Tab then return end
+                CurrentTab.Visible = false
+                CurrentTab = Tab
+                Tab.Visible = true
+            else
+                local ComingSoon = ShopFrame.Container.ComingSoon
+                CurrentTab.Visible = false
+                CurrentTab = ComingSoon
+                ComingSoon.Visible = true
+            end
+        end)
+    end
+end
+
 
 function module:Toggle(Bool)
     local Close = function()

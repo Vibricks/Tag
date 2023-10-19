@@ -5,7 +5,7 @@ local LobbyUI = Player:WaitForChild("PlayerGui"):WaitForChild("LobbyUI")
 local SpinUI = Player:WaitForChild("PlayerGui"):WaitForChild("SpinUI")
 
 local ShopFrame = LobbyUI:WaitForChild("Shop")
-local WeaponTab = ShopFrame.Container.WeaponTab
+local WeaponsTab = ShopFrame.Container.WeaponsTab
 
 local SFX = game:GetService("SoundService").SFX
 
@@ -22,10 +22,25 @@ local PlayerProfileReplica = ReplicaInterfaceController:GetReplica("PlayerProfil
 
 local module = {}
 
-function module:Setup()
-    --TODO: load all items in the current stock 
-    local Grid = WeaponTab.Middle.Grid
-    local Stock = ShopData.WeaponSpin.CurrentStock
+Shared.ConnectionTrove:Add(ReplicatedStorage.GameInfo.RestockMessage:GetPropertyChangedSignal("Value"):Connect(function()
+    WeaponsTab.Middle.Restock.TextLabel.Text = ReplicatedStorage.GameInfo.RestockMessage.Value
+end))
+
+--! loading all items in the current stock 
+local Grid = WeaponsTab.Middle.Grid
+
+local function LoadStock(Stock)
+    for i, v in pairs(Grid:GetChildren()) do
+        if v:IsA("Frame") and v.Name ~= "SampleFrame" then 
+            v:Destroy()
+        end
+    end
+    -- print(table.foreach(ReplicatedStorage.Assets.Weapons:GetDescendants(), function(i,v)
+    --     if v:IsA("Model") then
+    --         return v.Name
+    --     end
+    -- end))
+
     for rarity, rarityStock in pairs(Stock) do
         for _, WeaponName in pairs(rarityStock) do
             local Weapon = ReplicatedStorage.Assets.Weapons:FindFirstChild(WeaponName, true)
@@ -36,41 +51,53 @@ function module:Setup()
             Display.Parent = Grid
         end
     end
-
-    --* Loading the rates
-    for i, v in pairs(SpinUI.RarityChart:GetChildren()) do
-        if v:IsA("Frame") and v.Name ~= "Sample" then
-            v:Destroy()
-        end
-    end
-
-    for rarity, percent in pairs(ShopData.WeaponSpin.Rates) do
-        local rarityText = SpinUI.RarityChart.Sample:Clone()
-        rarityText.Parent = SpinUI.RarityChart
-        rarityText.Text = tostring(rarity)..": "..tostring(percent).."%"
-        rarityText.TextColor3 = ShopData.RarityColors[rarity]
-        rarityText.Visible = true
-        rarityText.LayoutOrder = -percent
-    end
-    --*Spinning
-    WeaponTab.Buttons.SpinButton.Button.MouseButton1Click:Connect(function()
-        SFX.Click:Play()
-        ShopService:WeaponSpin():andThen(function(SelectedWeapon, SpinTime)
-            --* Clear existing items inside the slider
-            for _, child in pairs(SpinUI.SpinFrame.Slider:GetChildren()) do
-                if child:IsA("Frame") and child.Name ~= "SampleFrame" then
-                    child:Destroy()
-                end
-            end
-
-            SpinUI.Enabled = true
-            ShopFrame.Visible = false
-            Grid[SelectedWeapon.Name].Owned.Visible = true
-            Shared:Spin(SelectedWeapon, ShopData.WeaponSpin, SpinTime)
-        end)
-
-    end)
 end
+local x, Stock = ShopService:GetCurrentStock():await()
+print(x, Stock)
+
+LoadStock(Stock)
+
+ShopService.StockChanged:Connect(function(Stock, firstInit)
+    if firstInit then return end
+    LoadStock(Stock)
+end)
+
+--* Loading the rates
+for i, v in pairs(SpinUI.RarityChart:GetChildren()) do
+    if v:IsA("Frame") and v.Name ~= "Sample" then
+        v:Destroy()
+    end
+end
+
+for rarity, percent in pairs(ShopData.WeaponSpin.Rates) do
+    local rarityText = SpinUI.RarityChart.Sample:Clone()
+    rarityText.Parent = SpinUI.RarityChart
+    rarityText.Text = tostring(rarity)..": "..tostring(percent).."%"
+    rarityText.TextColor3 = ShopData.RarityColors[rarity]
+    rarityText.Visible = true
+    rarityText.LayoutOrder = -percent
+end
+--*Spinning
+WeaponsTab.Buttons.SpinButton.Button.MouseButton1Click:Connect(function()
+    SFX.Click:Play()
+    ShopService:WeaponSpin():andThen(function(SelectedWeapon, SpinTime)
+        --* Clear existing items inside the slider
+        for _, child in pairs(SpinUI.SpinFrame.Slider:GetChildren()) do
+            if child:IsA("Frame") and child.Name ~= "SampleFrame" then
+                child:Destroy()
+            end
+        end
+
+        SpinUI.Enabled = true
+        ShopFrame.Visible = false
+        Grid[SelectedWeapon.Name].Owned.Visible = true
+        local _, Stock = ShopService:GetCurrentStock():await()
+
+        ShopData.WeaponSpin.CurrentStock = Stock
+
+        Shared:Spin(SelectedWeapon, ShopData.WeaponSpin, SpinTime)
+    end)
+end)
 
 
 return module

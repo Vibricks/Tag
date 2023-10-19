@@ -57,7 +57,8 @@ function InputService.Client:ToggleSlide(Player, Bool, ExtraData)
     local IsSliding = StateManagerService:IsStateEnabled(Character, "Sliding")
     local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
     local IsLedgeGrabbing = StateManagerService:IsStateEnabled(Character, "LedgeGrabbing")
-    if not IsSprinting or IsLedgeGrabbing or Humanoid.FloorMaterial == Enum.Material.Air then return end
+    local IsVaulting = StateManagerService:IsStateEnabled(Character, "Vaulting")
+    if not IsSprinting or IsLedgeGrabbing or Humanoid.FloorMaterial == Enum.Material.Air or IsVaulting then return end
 
     local function EndSlide()
         if not Character:GetAttribute("Sliding") then return end
@@ -224,27 +225,6 @@ end
 
 
 
-function InputService.Client:UseAbility(Player)
-    local Character = Player.Character
-	local Humanoid,HRP = Character:FindFirstChild("Humanoid"),Character:FindFirstChild("HumanoidRootPart")
-    if not Character or not Humanoid then return end
-
-    local Profile = PlayerDataService:GetProfile(Player)
-    local IsSliding = StateManagerService:IsStateEnabled(Character, "Sliding")
-    local IsAttacking = StateManagerService:IsStateEnabled(Character, "Attacking")
-    local LedgeGrabbing = StateManagerService:IsStateEnabled(Character, "LedgeGrabbing")
-    local IsClimbing = StateManagerService:IsStateEnabled(Character, "Climbing")
-    local IsTagger = CollectionService:HasTag(Character, "Taggers")
-    local GameInProgress = ReplicatedStorage.GameInfo.GameInProgress.Value
-    if not IsClimbing and not IsSliding and not IsAttacking and not LedgeGrabbing and not StateManagerService:IsOnCooldown(Character, "Ability") 
-    and Profile.Replica.Data.Inventory.CurrentAbility ~= "None" then
-        StateManagerService:SetCooldown(Character, "Ability", 15)
-        Util:SetCharacterVisibility(Character, false)
-        Util:PlaySoundInPart(SFX.Poof, HRP)
-        task.wait(5)
-        Util:SetCharacterVisibility(Character, true)
-    end
-end
 
 function InputService:KnitStart()
     

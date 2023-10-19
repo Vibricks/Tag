@@ -11,6 +11,7 @@ local Promise = require(ReplicatedStorage.Packages.Promise)
 Knit.OnStart():await()
 
 local InputService = Knit.GetService("InputService")
+local UserInputService = game:GetService("UserInputService")
 local AnimationController = Knit.GetController("AnimationController")
 local StateReader = require(ReplicatedStorage.Shared.StateReader)
 local ReplicaInterfaceController = Knit.GetController("ReplicaInterfaceController")
@@ -27,7 +28,7 @@ function StartSliding(SlideLifeTime)
     end
 
     local BV = Instance.new("BodyVelocity")
-    BV.MaxForce = Vector3.one * 1e5
+    BV.MaxForce = Vector3.new(1e5,0,1e5)
     BV.Name = "SlideBV"
     BV.Parent = HumanoidRootPart
 
@@ -41,6 +42,21 @@ function StartSliding(SlideLifeTime)
             local decelerationFactor = (elaspedTime*StudsRate)/10
             local x = (StudsRate - decelerationFactor)
             BV.Velocity = HumanoidRootPart.CFrame.LookVector *x
+
+            local origin = HumanoidRootPart.Position + Vector3.new(0,-2,0)
+            local dir = HumanoidRootPart.CFrame.LookVector.Unit * 3
+            local raycastParams = RaycastParams.new()
+            raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+            raycastParams.FilterDescendantsInstances = {Character}
+
+            local result = workspace:Raycast(origin, dir, raycastParams)
+            local Instance = result and result.Instance
+            if Instance then
+                if Instance.Anchored == true and Instance.CanCollide == true and  (Instance.Parent.Name ~= "Vault" and Instance.Parent.Parent.Name ~= "Vault") then
+                    InputService:ToggleSlide(false)
+                    resolve()
+                end
+            end
         end)
     
         task.wait(lifeTime) 
@@ -95,6 +111,7 @@ function module:BeginSlide()
         local VerifySlide = InputService:ToggleSlide(true)
         VerifySlide:andThen(function(CanSlide, SlideLifeTime)
             if CanSlide then
+   
                 StartSliding(SlideLifeTime)
             end
         end)

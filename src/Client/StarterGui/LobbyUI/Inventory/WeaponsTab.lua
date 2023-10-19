@@ -5,7 +5,7 @@ local LobbyUI = Player:WaitForChild("PlayerGui"):WaitForChild("LobbyUI")
 local RoundUI = Player:WaitForChild("PlayerGui"):WaitForChild("RoundUI")
 local InventoryFrame 
 
-local WeaponTab 
+local WeaponsTab 
 local Grid 
 local InfoFrame
 
@@ -32,9 +32,9 @@ local CurrentSelectedWeapon
 function module:Setup()
     LobbyUI = Player:WaitForChild("PlayerGui"):WaitForChild("LobbyUI")
     InventoryFrame = LobbyUI:WaitForChild("Inventory")
-    WeaponTab = InventoryFrame.WeaponTab
-    InfoFrame = WeaponTab.InfoFrame
-    Grid = WeaponTab.MainFrame.ScrollingFrame
+    WeaponsTab = InventoryFrame.WeaponsTab
+    InfoFrame = WeaponsTab.InfoFrame
+    Grid = WeaponsTab.MainFrame.ScrollingFrame
 
     UpdateWeaponsOwned()
     local TagWeapons = PlayerProfileReplica.Data.Inventory.TagWeapons
@@ -60,7 +60,7 @@ function module:Setup()
         AddNewWeapon(newValue)
     end))
 
-    local Equip = LobbyUI.Inventory.WeaponTab.InfoFrame.Equip
+    local Equip = LobbyUI.Inventory.WeaponsTab.InfoFrame.Equip
     Equip:SetAttribute("Type", "Equip")
 end
 
@@ -79,7 +79,7 @@ function UpdateWeaponsOwned()
     for i, v in pairs(PlayerProfileReplica.Data.Inventory.TagWeapons) do
         OwnedWeapons += 1
     end
-    WeaponTab.MainFrame.AmountOwned.Text = OwnedWeapons.."/"..TotalWeapons.." Owned"
+    WeaponsTab.MainFrame.AmountOwned.Text = OwnedWeapons.."/"..TotalWeapons.." Owned"
 end
 
 function ChangeEquipButton(Type)

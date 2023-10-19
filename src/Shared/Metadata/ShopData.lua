@@ -15,20 +15,30 @@ ShopData.WeaponSpin = {
         Legendary = 5;
     },
     CurrentStock = {
-        Common = {"Green Brick", "Yellow Brick", "Orange Brick"};
-        Rare = {"Blue Brick", "White Brick"};
-        Legendary = {"Red Brick"}
+
     };
     Storage = ReplicatedStorage.Assets:WaitForChild("Weapons")
 }
 
 ShopData.Abilities = {
-    ["Invisibility"] = {
-        Price = 500, 
+    ["Trap"] = {
+        Price = 600, 
         Description = "Allows the user to go invisible for a few seconds",
         Icon = "rbxassetid://14961717058",
-        UpgradePrices = {5,10,15}
-    }
+        UpgradePrices = {5,10,15},
+        ExclusiveTo = "Taggers",
+        Cooldown = 5
+    }, 
+
+    ["Invisibility"] = {
+        Price = 1000, 
+        Description = "Allows the user to go invisible for a few seconds",
+        Icon = "rbxassetid://14961717058",
+        UpgradePrices = {5,10,15},
+        Cooldown = 20
+    },
+
+
 
 }
 

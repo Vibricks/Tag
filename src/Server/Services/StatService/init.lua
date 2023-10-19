@@ -36,9 +36,9 @@ function StatService:IncreaseExp(Player, Amount)
 end
 
 
-function StatService:IncreaseCash(Player, Amount)
+function StatService:IncreaseCoins(Player, Amount)
     local Profile = PlayerDataService:GetProfile(Player)
-    Profile.Replica:SetValue({"Cash"}, Profile.Replica.Data.Cash + Amount)
+    Profile.Replica:SetValue({"Coins"}, Profile.Replica.Data.Coins + Amount)
 end
 
 function StatService.Client:ChangeSetting(Player, SettingName, NewSetting)
