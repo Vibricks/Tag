@@ -328,8 +328,4 @@ end)
 -- 	end)
 -- end
 
-local UserGameSettings = UserSettings():GetService("UserGameSettings")
-UserGameSettings.RotationType = Enum.RotationType.CameraRelative
-
-Humanoid.AutoJumpEnabled = false
 return module

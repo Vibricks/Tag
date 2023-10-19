@@ -114,4 +114,10 @@ if UserInputService.TouchEnabled then
     MobileButtons.Climb.Button.MouseButton1Click:Connect(function()
         ClimbModule.detectWall(true)
     end)
+
+    
+    local UserGameSettings = UserSettings():GetService("UserGameSettings")
+    UserGameSettings.RotationType = Enum.RotationType.CameraRelative
+
+    Humanoid.AutoJumpEnabled = false
 end
