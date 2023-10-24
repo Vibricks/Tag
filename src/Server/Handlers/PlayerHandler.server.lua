@@ -4,6 +4,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 Knit.OnStart():await()
 
 local StateManagerService = Knit.GetService("StateManagerService")
+local CosmeticService = Knit.GetService("CosmeticService")
 
 
 for _, Player in pairs(game.Players:GetChildren()) do
@@ -11,6 +12,7 @@ for _, Player in pairs(game.Players:GetChildren()) do
         StateManagerService.Initialize(Player.Character)
     end
     Player.CharacterAdded:Connect(function(Character)
+        CosmeticService:ApplyTitle(Character)
         StateManagerService.Initialize(Character)
     end)
 end

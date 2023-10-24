@@ -68,7 +68,7 @@ function module:Swing()
             if ReplicatedStorage.GameInfo.GameInProgress.Value == true then 
                 local HitboxInfo = {
                     Character = Character,
-                    Range = 3,
+                    Range = 5.5,
                     MultipleVictims = false,
                 }
                 local HitResult, Victim = MagnitudeHitbox(HitboxInfo)

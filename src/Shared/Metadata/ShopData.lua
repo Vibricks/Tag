@@ -8,22 +8,32 @@ ShopData.RarityColors = {
 }
 
 ShopData.WeaponSpin = {
-    Price = 200,
+    Price = 200;
     Rates = {
-        Common = 75;
-        Rare = 20;
-        Legendary = 5;
-    },
-    CurrentStock = {
-
+        Common = 75,
+        Rare = 20,
+        Legendary = 5,
     };
+    CurrentStock = {};
     Storage = ReplicatedStorage.Assets:WaitForChild("Weapons")
+}
+
+ShopData.TitleSpin = {
+    Price = 100;
+    Rates = {
+        Common = 75,
+        Rare  = 20,
+        Legendary = 5,
+    };
+    CurrentStock = {};
+    Storage = ReplicatedStorage.Assets:WaitForChild("Titles")
 }
 
 ShopData.Abilities = {
     ["Trap"] = {
         Price = 600, 
         Description = "Allows the user to go invisible for a few seconds",
+        UpgradeDescription = "+1 Seconds of stun time",
         Icon = "rbxassetid://14961717058",
         UpgradePrices = {5,10,15},
         ExclusiveTo = "Taggers",
@@ -33,6 +43,8 @@ ShopData.Abilities = {
     ["Invisibility"] = {
         Price = 1000, 
         Description = "Allows the user to go invisible for a few seconds",
+        UpgradeDescription = "+1 Seconds for invisibility",
+
         Icon = "rbxassetid://14961717058",
         UpgradePrices = {5,10,15},
         Cooldown = 20

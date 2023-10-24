@@ -11,6 +11,6 @@ return function (Player)
     local HRP = Character.HumanoidRootPart
     Util:SetCharacterVisibility(Character, false)
     Util:PlaySoundInPart(SFX.Poof, HRP)
-    task.wait(5)
+    task.wait(3)
     Util:SetCharacterVisibility(Character, true)
 end

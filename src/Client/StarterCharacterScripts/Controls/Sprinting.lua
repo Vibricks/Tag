@@ -21,7 +21,7 @@ function module:BeginSprint(ShiftSprint)
 	if ShiftSprint and PlayerProfileReplica.Data.Settings.AutoSprint then
 		return
 	end
-	InputService:ToggleSprint():andThen(function(Verified)
+	InputService:ToggleSprint(true):andThen(function(Verified)
 		if Verified == true then
 			SprintAnim:Play()
 		end
@@ -32,7 +32,7 @@ function module:EndSprint(ShiftSprint)
 	if ShiftSprint and PlayerProfileReplica.Data.Settings.AutoSprint then
 		return
 	end
-	InputService:ToggleSprint()
+	InputService:ToggleSprint(false)
 	SprintAnim:Stop()
 end
 
@@ -64,7 +64,7 @@ function AutoSprint(bool) --! first argument = old value
 	end
 end
 
-if PlayerProfileReplica.Data.Settings.AutoSprint then
+if PlayerProfileReplica.Data.Settings.AutoSprint or game:GetService("UserInputService").TouchEnabled  then
 	AutoSprintEnabled = true
 	AutoSprint(true)
 end
@@ -100,12 +100,11 @@ RunService.RenderStepped:Connect(function(deltaTime)
         if Humanoid.Health <= 0 then
             return
         end
-
-        if Humanoid.MoveDirection == Vector3.new() then
-            SprintAnim:Stop()
-            -- if AutoSprintEnabled then
-            --     module:EndSprint()
-            -- end
+		local State = Humanoid:GetState()
+        if Humanoid.MoveDirection == Vector3.new() or State == Enum.HumanoidStateType.Jumping or State == Enum.HumanoidStateType.FallingDown or State == Enum.HumanoidStateType.Freefall then
+			if SprintAnim.IsPlaying == true then
+				SprintAnim:Stop()
+			end
         else
             if SprintAnim.IsPlaying == false and not Character:GetAttribute("PauseSprint") then
                 SprintAnim:Play()

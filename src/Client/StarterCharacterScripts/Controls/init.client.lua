@@ -121,3 +121,7 @@ if UserInputService.TouchEnabled then
 
     Humanoid.AutoJumpEnabled = false
 end
+
+Humanoid.StateChanged:Connect(function(old, new)
+    
+end)

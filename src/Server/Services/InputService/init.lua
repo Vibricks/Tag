@@ -24,7 +24,7 @@ local AnimationService
 local RoundService 
 local PlayerDataService
 
-function InputService.Client:ToggleSprint(Player)
+function InputService.Client:ToggleSprint(Player, Bool)
 	local Character = Player.Character
 	local Humanoid,HRP = Character:FindFirstChild("Humanoid"),Character:FindFirstChild("HumanoidRootPart")
 
@@ -35,17 +35,17 @@ function InputService.Client:ToggleSprint(Player)
 
     local IsSprintPaused =  Character:GetAttribute("PauseSprint")
 
-    if not IsSprinting then
+    if not IsSprinting and Bool == true then
         if IsSliding or IsClimbing or IsLedgeGrabbing then return end
         StateManagerService:UpdateState(Character, "Sprinting", true)
         Character:SetAttribute("Sprinting", true)
-        Humanoid.WalkSpeed = StateManagerService.Defaults.WalkSpeed + StateManagerService.Defaults.SPRINT_SPEED_INCREASE
+        Humanoid.WalkSpeed = StateManagerService:GetCharacterDefaultSpeed(Character) + StateManagerService.Defaults.SPRINT_SPEED_INCREASE
         return true
-    else
+    elseif IsSprinting and Bool == false then
         StateManagerService:UpdateState(Character, "Sprinting", false)
         Character:SetAttribute("Sprinting", false)
         if not IsSliding and not IsLedgeGrabbing and not IsClimbing then
-            Humanoid.WalkSpeed = StateManagerService.Defaults.WalkSpeed
+            Humanoid.WalkSpeed = StateManagerService:GetCharacterDefaultSpeed(Character)
         end
     end
 end
@@ -58,16 +58,25 @@ function InputService.Client:ToggleSlide(Player, Bool, ExtraData)
     local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
     local IsLedgeGrabbing = StateManagerService:IsStateEnabled(Character, "LedgeGrabbing")
     local IsVaulting = StateManagerService:IsStateEnabled(Character, "Vaulting")
-    if not IsSprinting or IsLedgeGrabbing or Humanoid.FloorMaterial == Enum.Material.Air or IsVaulting then return end
-
+    if not IsSprinting or IsLedgeGrabbing or IsVaulting then return end
+    --or Humanoid.FloorMaterial == Enum.Material.Air 
     local function EndSlide()
         if not Character:GetAttribute("Sliding") then return end
         --StateManagerService:SetCooldown(Character, "Sliding", 1)
 
+        task.delay(.8, function()
+            for i, v in pairs(Character:GetChildren()) do
+                if v:IsA("BasePart") then
+                    v.CollisionGroup = "None"
+                end
+            end
+        end)
+
+
         HRP.CanCollide = true
         Character:SetAttribute("Sliding", false)
         Character:SetAttribute("PauseSprint", false)
-        local defaultSpeed = StateManagerService.Defaults.WalkSpeed
+        local defaultSpeed = StateManagerService:GetCharacterDefaultSpeed(Character)
         local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
         Humanoid.JumpPower = StateManagerService.Defaults.JumpPower
         local SLIDE_SPEED_INCREASE = 30
@@ -103,6 +112,12 @@ function InputService.Client:ToggleSlide(Player, Bool, ExtraData)
 
         Character:SetAttribute("CanCancelSlide", false)
         Character:SetAttribute("PauseSprint", true)
+
+        for i, v in pairs(Character:GetChildren()) do
+            if v:IsA("BasePart") then
+                v.CollisionGroup = "Slider"
+            end
+        end
 
 
         task.delay(.5, function()
@@ -213,11 +228,11 @@ function InputService.Client:Vault(Player)
     if not Character or not Humanoid then return end
     local IsSprinting = StateManagerService:IsStateEnabled(Character, "Sprinting")
     if IsSprinting then
-        StateManagerService:ChangeSpeed(Character, 5, 0.4, 2, {DisableJump = true})
+        StateManagerService:ChangeSpeed(Character, 16, 0.4, 2, {DisableJump = true})
         StateManagerService:UpdateState(Character, "Vaulting", 0.75)
         task.wait(0.75)
         if StateManagerService:IsStateEnabled(Character, "Sprinting") then
-            local Speed = StateManagerService.Defaults.WalkSpeed + StateManagerService.Defaults.SPRINT_SPEED_INCREASE + 30
+            local Speed = StateManagerService:GetCharacterDefaultSpeed(Character) + StateManagerService.Defaults.SPRINT_SPEED_INCREASE + 30
             StateManagerService:ChangeSpeed(Character, Speed, .35, 2)
         end
     end

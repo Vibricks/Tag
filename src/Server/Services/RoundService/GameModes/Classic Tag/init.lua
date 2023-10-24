@@ -20,7 +20,7 @@ local RoundUtil = require(script.Parent.Parent.RoundUtil)
 local module = {}
 
 module.Config = {
-	DURATION = 60,
+	DURATION = 90,
 	WIN_TYPE = "ONE_MVP",
 }
 
@@ -35,8 +35,8 @@ function module.SetupGamemode()
 	task.wait(1)
 
 	--* Create the teams
-	TeamService.CreateTeam("Taggers", true)
-	TeamService.CreateTeam("Runners", true)
+	TeamService.CreateTeam("Taggers")
+	TeamService.CreateTeam("Runners")
 
 	TeamService.CurrentTeams["Runners"].Description = "Run away from all taggers until the time runs out!"
 	TeamService.CurrentTeams["Taggers"].Description = "Capture all runners before the time runs out!"
@@ -131,13 +131,13 @@ function module.ProcessTagHit(Attacker, Victim)
 	local AttackerRagdolled = StateReader:IsStateEnabled(Attacker, "Ragdolled")
 	local VictimRagdolled = StateReader:IsStateEnabled(Victim, "Ragdolled")
 	if AttackerRagdolled or VictimRagdolled then return end
-	if CollectionService:HasTag(Attacker, "Taggers") then
+	if CollectionService:HasTag(Attacker, "Taggers") and not CollectionService:HasTag(Victim, "Taggers") then
+		if not VictimPlr:GetAttribute("InGame") then return end
 		local VictimHum = Victim.Humanoid
 		local VictimHRP = Victim.HumanoidRootPart
 
 		if VictimHRP then 
 			Util:PlaySoundInPart(SoundService.SFX.SwipeHit, VictimHRP)
-			--Knockback(Attacker, Victim, {})
 		end
 		
 		StateManagerService:UpdateState(Victim, "Ragdolled", 10)
@@ -145,9 +145,11 @@ function module.ProcessTagHit(Attacker, Victim)
 		RoundService.Client.ReflectOnUI:FireAll("TagLog", {Attacker.Name, Victim.Name})
 		RoundService.Client.ReflectOnUI:Fire(VictimPlr, "YouWereTagged")
 
+		--TeamService.CurrentTeams.Runners.Members[Victim].Alive = false
+		VictimPlr:SetAttribute("InGame", false)
+
 		--* Removing them from the match
 		task.delay(1, function()
-			VictimPlr:SetAttribute("InGame", false)
 			RoundUtil:ReturnToLobby(Victim)
 		end)
 
@@ -179,16 +181,17 @@ function module.WinCondition()
 				local TeamMembers = TeamService.CurrentTeams.Runners.Members
 				local remaining = 0
 				for plrIndex, dictInfo in pairs(TeamMembers) do
-					--print(plrIndex, "Is a member of Runners")
-					remaining += 1
+					if plrIndex:GetAttribute("InGame") then
+						remaining += 1
+					end
 				end
-				--warn("Reaming players:", remaining)
-				if remaining - 1 <= 0 then
+				if remaining <= 0 then
 					return true
 				end
 			end
 			return false
 		end):andThen(function()
+			warn("Win Condition")
 			RoundUtil.ChangeServerMessage("No more runners remain!")
 
 			MatchResults.Winner = "Taggers"

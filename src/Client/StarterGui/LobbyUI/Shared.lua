@@ -45,7 +45,7 @@ function module:setViewport(viewportFrame, Object)
     viewportFrame.CurrentCamera = currentCamera
 end
 
-function module:createWeaponDisplay(Weapon: Instance, Rarity: string, Sort)
+function module:createWeaponDisplay(Weapon: Instance, Rarity: string, Sort: string)
     if type(Weapon) == "string" then Weapon = ReplicatedStorage.Assets.Weapons:FindFirstChild(Weapon, true) end
     local Rarity = Rarity or Weapon.Parent.Name
     local Display = Templates.WeaponDisplay:Clone()
@@ -70,10 +70,51 @@ function module:createWeaponDisplay(Weapon: Instance, Rarity: string, Sort)
     end
     return Display
 end
+local ThumbnailType = Enum.ThumbnailType.HeadShot
+local ThumbnailSize = Enum.ThumbnailSize.Size420x420
+local Thumbnail =  game.Players:GetUserThumbnailAsync(Player.UserId,ThumbnailType, ThumbnailSize)
+
+_G.PlrThumbnail = Thumbnail
+
+function module:createTitleDisplay(TitleHolder: Instance, Rarity: string, Sort: string)
+    if type(TitleHolder) == "string" then TitleHolder = ReplicatedStorage.Assets.Titles:FindFirstChild(TitleHolder, true) end
+    if TitleHolder.Name == "IgnorePart" then return end
+    local Rarity = Rarity or TitleHolder.Parent.Name
+    local Display = Templates.TitleDisplay:Clone()
+    Display.Name = TitleHolder.Name
+    Display.Owned.Visible = false
+    Display.Visible = true
+    Display.Title.Text = TitleHolder.Title.TextLabel.Text
+    Display.Title.TextColor3 = TitleHolder.Title.TextLabel.TextColor3
+    if TitleHolder.Title.TextLabel:FindFirstChild("UIGradient") then
+        TitleHolder.Title.TextLabel.UIGradient:Clone().Parent = Display.Title
+    end
+    Display.BackgroundColor3 = ShopData.RarityColors[Rarity]
+    Display.PlrThumbnail.Image = Thumbnail
+
+    local particles = TitleHolder:FindFirstChildOfClass("ParticleEmitter") 
+    if particles then
+        Display.AuraIcon.Visible = true
+        Display.AuraIcon.Image = particles.Texture
+    end
+    if Sort == "Rarity" then
+        if Rarity == "Common" then 
+            Display.LayoutOrder = 1
+        elseif Rarity == "Rare" then
+            Display.LayoutOrder = 2
+        elseif Rarity == "Legendary" then
+            Display.LayoutOrder = 3
+        else 
+            warn("None of the above")
+            Display.LayoutOrder = 4
+        end
+    end
+    return Display
+end
 
 
 
-function module:Spin(SelectedItem, SpinData, unboxTime)
+function module:Spin(SelectedItem: Instance, SpinData: table, unboxTime: number)
     local numItems = Random.new():NextInteger(20, 100)
     local chosenPosition = Random.new():NextInteger(15, numItems-5)
     local finalRarity = SelectedItem.Parent.Name
@@ -95,7 +136,7 @@ function module:Spin(SelectedItem, SpinData, unboxTime)
                 end
             end
 
-            --* Getting the weapons we can potentially obtain from this spin
+            --* Getting the items we can potentially obtain from this spin
             local unboxableItems = {}
             for _, weapons in pairs(SpinData.CurrentStock) do
                 for i = 1, #weapons do
@@ -103,7 +144,7 @@ function module:Spin(SelectedItem, SpinData, unboxTime)
                 end
             end
 
-            --* Shuffling the weapons 
+            --* Shuffling the items 
             for i = #unboxableItems, 2, -1 do
                 local j = Random.new():NextInteger(1, i)
                 unboxableItems[i], unboxableItems[j] = unboxableItems[j], unboxableItems[i]
@@ -117,16 +158,13 @@ function module:Spin(SelectedItem, SpinData, unboxTime)
             end
         end
 
-        		
-		-- local newItemFrame = SpinUI.SpinFrame.Slider.SampleFrame:Clone()
-        -- newItemFrame.Name = displayItem.Name
-        -- newItemFrame.ImageLabel.Visible = false
-        -- newItemFrame.Owned.Visible = false
-        -- newItemFrame.Visible = true
-        -- newItemFrame.Title.Text = displayItem.Name
-		-- newItemFrame.BackgroundColor3 = ShopData.RarityColors[rarityChosen]
-        -- self:setViewport(newItemFrame.ItemViewport, displayItem)
-        local DisplayFrame = self:createWeaponDisplay(displayItem, rarityChosen)
+        local DisplayFrame
+        if displayItem:FindFirstChild("Title") then
+            DisplayFrame = self:createTitleDisplay(displayItem, rarityChosen)
+
+        else
+            DisplayFrame = self:createWeaponDisplay(displayItem, rarityChosen)
+        end
 
         if displayItem == SelectedItem then chosenFrame = DisplayFrame end
 		DisplayFrame.Parent = SpinUI.SpinFrame.Slider
@@ -143,17 +181,16 @@ function module:Spin(SelectedItem, SpinData, unboxTime)
 	local rndOffset = Random.new():NextNumber(-cellSize/2, cellSize/2)
 	posFinal += rndOffset
     
-
     local timeOpened = tick()
-
 	
-	local pow = 3--Random.new():NextNumber(2, 10)
+	local pow = 3
 	local lastSlot = 0
 	SpinUI.ItemName.Title.Text = "Spinning..."
-    --SpinUI.ItemRarity.Title.Text = "Rarity"
-    --SpinUI.ItemRarity.Title.TextColor3 = Color3.fromRGB(255,255,255)
-   -- SpinUI.SpinFrame.Cover.Visible = true
+
     SpinUI.ItemName.Title.TextColor3 = Color3.fromRGB(255,255,255)
+    
+
+
 	while true do
 		local timeSinceOpened = tick() - timeOpened
 		local x = timeSinceOpened / (5)
@@ -177,15 +214,27 @@ function module:Spin(SelectedItem, SpinData, unboxTime)
 	end
 
     SpinUI.ItemName.Title.Text = SelectedItem.Name
-    --SpinUI.ItemRarity.Title.Text = finalRarity
     SpinUI.ItemName.Title.TextColor3 = ShopData.RarityColors[finalRarity]
     SFX.Shine:Play()
-   -- SpinUI.SpinFrame.Cover.Visible = false
     chosenFrame.ZIndex = 4
+
+    local copiedGradient
+    if SelectedItem:FindFirstChild("Title") then
+        SpinUI.ItemName.Title.TextColor3 = SelectedItem.Title.TextLabel.TextColor3
+        if SelectedItem.Title.TextLabel:FindFirstChild("UIGradient") then
+            copiedGradient =  SelectedItem.Title.TextLabel:FindFirstChild("UIGradient"):Clone()
+            copiedGradient.Name = "CustomGradient"
+            copiedGradient.Parent = SpinUI.ItemName.Title
+        end
+    end
+
+
     task.wait(2)
     module.CurrentFrame = nil
     game.Lighting.UI_BLUR.Enabled = false
-
+    if copiedGradient then 
+        copiedGradient:Destroy()
+    end
     SpinUI.Enabled = false
 end
 

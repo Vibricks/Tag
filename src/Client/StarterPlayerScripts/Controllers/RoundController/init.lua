@@ -33,6 +33,7 @@ local RoundUI
 local ResultsUI 
 local LobbyUI 
 local AnnouncementUI
+local SpectateUI
 
 local ProfileReplica
 
@@ -102,6 +103,8 @@ function RoundController:KnitStart()
         RoundUI = PlayerGui:WaitForChild("RoundUI")
         ResultsUI = PlayerGui:WaitForChild("ResultsUI")
         AnnouncementUI = PlayerGui:WaitForChild("AnnouncementUI")
+        SpectateUI = PlayerGui:WaitForChild("SpectateUI")
+
         if Request == "EnableRoundUI" then
             if not Knit.Player:GetAttribute("IsAFK") then
                 game.Lighting.UI_BLUR.Enabled = false
@@ -175,6 +178,13 @@ function RoundController:KnitStart()
                     Tween = TweenService:Create(v, TweenInfo.new(Duration-2), {Transparency = 1})
                 end
                 if Tween then Tween:Play() Tween:Destroy() end
+            end
+        elseif Request == "ReturnToLobby" then
+            RoundUI.Enabled = false
+            LobbyUI.Enabled = true
+            if GameInfo.GameInProgress.Value == true then
+                SpectateUI.Enabled = true
+                SpectateUI.Buttons.Spectate.Visible = true 
             end
         end
     end)

@@ -287,7 +287,8 @@ end
 
 --detect ledges
 function module.detectWall(mobile)
-	if (Humanoid:GetState() == Enum.HumanoidStateType.Freefall or Humanoid:GetState() == Enum.HumanoidStateType.Jumping) or mobile then
+	--if (Humanoid:GetState() == Enum.HumanoidStateType.Freefall or Humanoid:GetState() == Enum.HumanoidStateType.Jumping) or mobile then
+	if not currentlyClimbing and not currentlyGrabbingLedge then
 		local wallhitResults = workspace:Raycast(HRP.CFrame.Position, HRP.CFrame.LookVector * 5, raycastParams)
 		if wallhitResults then
 			if wallhitResults.Instance and wallhitResults.Instance.Anchored == true and wallhitResults.Instance.CanCollide == true then		

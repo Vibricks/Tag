@@ -16,11 +16,10 @@ TeamService.DefaultTeamColors = {
 
 TeamService.CurrentTeams = {}
 
-function TeamService.CreateTeam(TeamName, CanTag, Color)
+function TeamService.CreateTeam(TeamName, Color)
     local newTeam = {}
     newTeam.Name = TeamName
     newTeam.Members = {}
-    newTeam.CanTag = CanTag or false
     newTeam.Color = TeamService.DefaultTeamColors[TeamName] or Color
     TeamService.CurrentTeams[TeamName] = newTeam
     RoundService.CurrentTrove:Add(function()
@@ -40,7 +39,15 @@ function TeamService.AssignTeam(Player, TeamName)
             local TeamOverhead = RoundService.CurrentTrove:Add(ReplicatedStorage.Assets.Misc.TeamOverhead:Clone())
             TeamOverhead.ImageLabel.ImageColor3 = Team.Color
             TeamOverhead.Parent = Character.Head
+
+            local _, Size = Character:GetBoundingBox()
+            local Offset = Vector3.new(0,Size.Y/2,0)
+            if Character.Head:FindFirstChild("Title") then
+                TeamOverhead.StudsOffset = Offset + Vector3.new(0,1,0)
+            end
+
             local Highlight = RoundService.CurrentTrove:Add(Instance.new("Highlight"))
+            Highlight.Name = "TeamColorHighlight"
             Highlight.FillTransparency = 1
             Highlight.OutlineTransparency = 0
             Highlight.OutlineColor = Team.Color

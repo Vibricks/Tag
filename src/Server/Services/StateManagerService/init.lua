@@ -1,3 +1,4 @@
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local RunService = game:GetService("RunService")
@@ -21,6 +22,7 @@ module.Defaults = {
 	WalkSpeed = 22,
 	JumpPower = 50,
 	SPRINT_SPEED_INCREASE = 15,
+	TAGGER_SPEED_BOOST = 8,
 }
 
 local StateProfileClassToken = ReplicaService.NewClassToken("StateProfile")
@@ -115,6 +117,7 @@ function module:UpdateState(Character, StateName, NewValue)
 	end
 end
 
+
 function module:RetrieveState(Character: Model, StateName: string)
 	local Player = game.Players:GetPlayerFromCharacter(Character) 
 	local State
@@ -157,6 +160,16 @@ function  module:IsOnCooldown(Character, CooldownName)
 	else
 		--? POTENTIAL NPC LOGIC GOES HERE
 	end
+end
+
+function module:GetCharacterDefaultSpeed(Character)
+	local IsTagger = CollectionService:HasTag(Character, "Taggers")
+	local DefaultSpeed =  module.Defaults.WalkSpeed
+	local TotalSpeed = DefaultSpeed
+	if IsTagger then 
+		TotalSpeed += module.Defaults.TAGGER_SPEED_BOOST
+	end
+	return TotalSpeed
 end
 
 function module:ChangeSpeed(Character,Speed,Duration, Priority, Disables)

@@ -24,42 +24,83 @@ local PlayerProfileReplica = ReplicaInterfaceController:GetReplica("PlayerProfil
 local module = {}
 
 local Connections = {}
+local CurrentSelectedAbility
 
-local function CreateEquipConnection(abilityName)
-    Connections["AbilityEquip"] = InfoFrame.Purchase.Button.MouseButton1Click:Connect(function()
-        if ClickDebounce then
-            return
-        end
-        ClickDebounce = true
-        if InfoFrame.Purchase:GetAttribute("Type") == "Equip" then
-            warn("Equip")
-            AbilityService:EquipAbility(abilityName):andThen(function(Results)
-                warn(Results)
-                if Results == "Equipped" then
-                    ChangePurchaseButton("Unequip")
-                    SFX.Click:Play()
-                else
-                    SFX.Error:Play()
-                end
-            end)
-        else
-            warn("Unequip")
 
-            AbilityService:UnequipAbility(abilityName):andThen(function(Results)
-                warn(Results)
-                if Results == "Unequipped" then
-                    ChangePurchaseButton("Equip", abilityName)
-                    SFX.Click:Play()
-                else
-                    SFX.Error:Play()
-                end
-            end)
-        end
-
-        task.wait(0.5)
-        ClickDebounce = false
-    end)
+function VisualizeUpgrades(AbilityName)
+	for i, v in pairs(InfoFrame.Upgrades:GetChildren()) do
+		if v:IsA("Frame") then
+			v.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		end
+	end
+	
+	for i = 1, PlayerProfileReplica.Data.Inventory.Abilities[AbilityName].Upgrades do
+		InfoFrame.Upgrades[i].BackgroundColor3 = Color3.fromRGB(21, 181, 255)
+	end
 end
+
+Shared.ConnectionTrove:Add(InfoFrame.Purchase.Button.MouseButton1Click:Connect(function()
+	if ClickDebounce then
+		return
+	end
+	ClickDebounce = true
+	SFX.Click:Play()
+
+	if InfoFrame.Purchase:GetAttribute("Type") == "Equip" then
+		AbilityService:EquipAbility(CurrentSelectedAbility):andThen(function(Results)
+			if Results == "Equipped" then
+				ChangePurchaseButton("Unequip")
+			else
+				SFX.Error:Play()
+			end
+		end)
+	else
+
+		AbilityService:UnequipAbility(CurrentSelectedAbility):andThen(function(Results)
+			if Results == "Unequipped" then
+				ChangePurchaseButton("Equip", CurrentSelectedAbility)
+			else
+				SFX.Error:Play()
+			end
+		end)
+	end
+
+	task.wait(0.5)
+	ClickDebounce = false
+end))
+
+
+Shared.ConnectionTrove:Add(InfoFrame.Upgrade.Button.MouseButton1Click:Connect(function()
+	if ClickDebounce then
+		return
+	end
+	ClickDebounce = true
+	SFX.Click:Play()
+	ShopService:UpgradeAbility(CurrentSelectedAbility):andThen(function(Results)
+		warn(Results)
+		if Results == "Upgraded" then
+			SFX.Upgrade:Play()
+			VisualizeUpgrades(CurrentSelectedAbility)
+		else
+			SFX.Error:Play()
+		end
+	end)
+
+	task.wait(0.5)
+	ClickDebounce = false
+end))
+
+
+Shared.ConnectionTrove:Add(InfoFrame.Upgrade.MouseEnter:Connect(function()
+	if CurrentSelectedAbility then
+		SFX.MouseHover:Play()
+		InfoFrame.UpgradeDescription.Text = ShopData.Abilities[CurrentSelectedAbility].UpgradeDescription
+		InfoFrame.UpgradeDescription.Visible = true
+	end
+end))
+Shared.ConnectionTrove:Add(InfoFrame.Upgrade.MouseLeave:Connect(function()
+	InfoFrame.UpgradeDescription.Visible = false
+end))
 
 function ChangePurchaseButton(Type)
     if Type == "Equip" then
@@ -91,8 +132,6 @@ function module:Setup()
 	local Grid = AbilityTab.MainFrame.ScrollingFrame
 	UpdateAbilitiesOwned()
 
-
-
 	for abilityName, abilityInfo in pairs(ShopData.Abilities) do
 		local abilityDisplay = Grid.SampleFrame:Clone()
 		abilityDisplay.Parent = Grid
@@ -105,32 +144,25 @@ function module:Setup()
 			end
 			ClickDebounce = true
 			SFX.Click:Play()
+			CurrentSelectedAbility = abilityName
 			InfoFrame.AbilityIcon.ImageLabel.Image = abilityInfo.Icon
 			InfoFrame.AbilityName.Text = abilityName
 			InfoFrame.Description.Text = abilityInfo.Description
 
 			if PlayerProfileReplica.Data.Inventory.Abilities[abilityName] then --* If they own the ability
 				-- ! Visualizing their upgrades
-				for i, v in pairs(InfoFrame.Upgrades:GetChildren()) do
-					if v:IsA("Frame") then
-						v.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					end
-				end
-                
-				for i = 1, PlayerProfileReplica.Data.Inventory.Abilities[abilityName].Upgrades do
-					InfoFrame.Upgrades[i].BackgroundColor3 = Color3.fromRGB(21, 181, 255)
-				end
+				VisualizeUpgrades(abilityName)
+				-- ! Changing the purchase button
 				if PlayerProfileReplica.Data.Inventory.CurrentAbility ~= abilityName then
 					ChangePurchaseButton("Equip")
                     RoundUI.Hotbar.Ability.TextLabel.Text = abilityName
-
 				else
 					ChangePurchaseButton("Unequip")
 				end
-				if Connections["AbilityEquip"] then
-					Connections["AbilityEquip"]:Disconnect()
-				end
-                CreateEquipConnection(abilityName)
+				-- if Connections["AbilityEquip"] then
+				-- 	Connections["AbilityEquip"]:Disconnect()
+				-- end
+                --CreateEquipConnection(abilityName)
 			else --* If they don't own the ability
 				InfoFrame.Purchase.TextLabel.Text = "Purchase ($" .. abilityInfo.Price .. ")"
 				if Connections["AbilityPurchase"] then
@@ -145,7 +177,7 @@ function module:Setup()
 						if Results == "Purchased" then
                             ChangePurchaseButton("Equip")
 							SFX.Purchase:Play()
-                            CreateEquipConnection(abilityName)
+                            --CreateEquipConnection(abilityName)
 							Connections["AbilityPurchase"]:Disconnect()
 						else
 							--SFX.Error:Play()

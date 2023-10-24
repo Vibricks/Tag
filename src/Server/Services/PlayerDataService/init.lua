@@ -14,7 +14,7 @@ local profileCache = {} -- [player] = {Profile = profile, Replica = replica}
 
 local IS_STUDIO = game:GetService("RunService"):IsStudio()
 local FORCE_USER_ID = 0 --// in case you want to force load somebody else's data
-local DATASTORE_VERSION = 6.91
+local DATASTORE_VERSION = 6.93
 
 local defaultPlayerData = {
 	Level = 1,
@@ -33,10 +33,12 @@ local defaultPlayerData = {
 	},
 
     Inventory = {
+		CurrentTitle = "Rich",
 		CurrentAbility = "Trap",
 		CurrentWeapon = "None",
         TagWeapons = {},
-		Abilities = {}--["Invisibility"] = {Upgrades = 1}},
+		Abilities = {},--["Invisibility"] = {Upgrades = 1}},
+		Titles = {},
     },
 
 
